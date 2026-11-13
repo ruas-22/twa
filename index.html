@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TWA Bluetooth</title>
+<meta name="description" content="Aplikasi pengendali Thermal Wearable Alarm lewat Bluetooth">
+<meta name="theme-color" content="#0e7490">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* =========================================================
+   Warna. Mode terang bawaan, mode gelap mengikuti HP.
+   ========================================================= */
+:root{
+  --bg:#f1f5f9; --kartu:#ffffff; --teks:#0f172a; --redup:#64748b; --garis:#e2e8f0;
+  --utama:#0e7490; --utama-teks:#ffffff; --dingin:#2563eb; --bahaya:#dc2626;
+  --ok:#16a34a; --peringatan:#d97706; --lunak:#f8fafc; --bayang:0 1px 3px rgba(15,23,42,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1220; --kartu:#131c2e; --teks:#e2e8f0; --redup:#94a3b8; --garis:#24324a;
+    --utama:#22a6c3; --utama-teks:#04121a; --dingin:#60a5fa; --bahaya:#f87171;
+    --ok:#4ade80; --peringatan:#fbbf24; --lunak:#0f1829; --bayang:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b1220; --kartu:#131c2e; --teks:#e2e8f0; --redup:#94a3b8; --garis:#24324a;
+  --utama:#22a6c3; --utama-teks:#04121a; --dingin:#60a5fa; --bahaya:#f87171;
+  --ok:#4ade80; --peringatan:#fbbf24; --lunak:#0f1829; --bayang:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--teks);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45}
+.wadah{max-width:520px;margin:0 auto;padding:12px 16px 40px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0 12px}
+header h1{font-size:20px;margin:0}
+header small{display:block;color:var(--redup);font-size:12.5px;font-weight:400}
+.pil{font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--garis);color:var(--redup);white-space:nowrap}
+.pil.on{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.pil.demo{background:color-mix(in srgb,var(--peringatan) 20%,transparent);color:var(--peringatan)}
+.kartu{background:var(--kartu);border:1px solid var(--garis);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:var(--bayang)}
+.kartu h2{font-size:14px;margin:0 0 10px;color:var(--redup);text-transform:uppercase;letter-spacing:.04em}
+button{font:inherit;border:0;border-radius:12px;padding:12px 14px;font-weight:700;cursor:pointer;
+  background:var(--lunak);color:var(--teks);border:1px solid var(--garis);min-height:46px}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.utama{background:var(--utama);color:var(--utama-teks);border-color:transparent}
+button.dingin{background:var(--dingin);color:#fff;border-color:transparent}
+button.bahaya{background:var(--bahaya);color:#fff;border-color:transparent}
+.lebar{width:100%}
+.baris{display:flex;gap:10px;align-items:center}
+.baris>*{flex:1}
+.info{color:var(--redup);font-size:13.5px;margin-top:8px}
+.besar{font-size:22px;padding:18px 14px;min-height:64px}
+/* gauge */
+.gauge{display:flex;flex-direction:column;align-items:center}
+.gauge svg{width:100%;max-width:260px;height:auto}
+.gauge .nilai{font-size:40px;font-weight:800;margin-top:-58px;line-height:1}
+.gauge .ket{color:var(--redup);font-size:13px;margin-top:4px}
+.gauge .label-suhu{font-weight:700;font-size:14px;margin-top:4px}
+canvas{width:100%;height:150px;display:block;margin-top:10px;border-radius:10px;background:var(--lunak);border:1px solid var(--garis)}
+/* alarm dan pola */
+input[type=time],input[type=number],input[type=text]{font:inherit;font-size:20px;padding:10px 12px;border-radius:12px;
+  border:1px solid var(--garis);background:var(--lunak);color:var(--teks);width:100%;min-height:48px}
+input[type=time]{font-size:28px;font-weight:700;text-align:center}
+.pola{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.pola label{font-size:12.5px;color:var(--redup);display:block;margin-bottom:4px}
+.pola input{text-align:center}
+/* progres denyut */
+.progres{height:12px;border-radius:999px;background:var(--garis);overflow:hidden;margin:10px 0 6px}
+.progres div{height:100%;width:0;background:var(--dingin);transition:width .4s}
+.fase{display:flex;justify-content:space-between;font-size:14px}
+.fase b.dingin{color:var(--dingin)} .fase b.jeda{color:var(--redup)}
+.ringkas{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.chip{font-size:13.5px;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--lunak);border:1px solid var(--garis);color:var(--redup)}
+.chip.on{background:color-mix(in srgb,var(--dingin) 16%,transparent);color:var(--dingin);border-color:transparent}
+.segmen{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.segmen button.pilih{background:var(--utama);color:var(--utama-teks);border-color:transparent}
+/* log */
+details summary{cursor:pointer;font-weight:700;color:var(--redup);font-size:14px}
+.log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:var(--lunak);border:1px solid var(--garis);
+  border-radius:10px;padding:8px;height:200px;overflow:auto;margin-top:8px;white-space:pre-wrap}
+.log .k{color:var(--dingin)} .log .s{color:var(--redup)}
+.peringatan{background:color-mix(in srgb,var(--peringatan) 15%,transparent);border:1px solid color-mix(in srgb,var(--peringatan) 45%,transparent);
+  border-radius:12px;padding:12px;font-size:14px;margin-bottom:12px}
+.peringatan .judul{display:block;margin-bottom:4px;font-weight:700}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(120px);background:#0f172a;color:#fff;
+  padding:10px 16px;border-radius:12px;font-size:14px;max-width:90vw;transition:transform .25s,opacity .25s;z-index:9;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;visibility:hidden}
+#toast.tampil{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
+.tersembunyi{display:none!important}
+footer{color:var(--redup);font-size:12.5px;text-align:center;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wadah">
+
+<header>
+  <h1>TWA <small>Thermal Wearable Alarm · Bluetooth</small></h1>
+  <span id="pil" class="pil">Belum tersambung</span>
+</header>
+
+<!-- Muncul kalau browser tidak mendukung Web Bluetooth -->
+<div id="tidakDidukung" class="peringatan tersembunyi">
+  <span class="judul">Browser ini belum bisa memakai Bluetooth</span>
+  Buka halaman ini di <b>Google Chrome</b> pada HP Android, lewat alamat yang diawali <b>https://</b>.
+  Di iPhone pakai browser <b>Bluefy</b>. Kamu tetap bisa mencoba tampilan dengan mode demo di bawah.
+</div>
+
+<!-- KONEKSI -->
+<section class="kartu">
+  <h2>Koneksi</h2>
+  <button id="tblSambung" class="utama lebar">Sambungkan ke TWA</button>
+  <div class="baris" style="margin-top:10px">
+    <button id="tblSinkron" disabled>Sinkron jam</button>
+    <button id="tblPutus" disabled>Putuskan</button>
+  </div>
+  <div class="info" id="infoKoneksi">Nyalakan alat TWA, lalu ketuk Sambungkan.</div>
+  <div class="info">Jam di alat <b id="jamEsp">belum diatur</b></div>
+</section>
+
+<!-- SUHU -->
+<section class="kartu">
+  <h2>Suhu dan kelembapan dekat kulit</h2>
+  <div class="gauge">
+    <svg viewBox="0 0 200 120" aria-hidden="true">
+      <path d="M20 105 A80 80 0 0 1 180 105" fill="none" stroke="var(--garis)" stroke-width="16" stroke-linecap="round"/>
+      <path id="busur" d="M20 105 A80 80 0 0 1 180 105" fill="none" stroke="var(--dingin)" stroke-width="16"
+            stroke-linecap="round" stroke-dasharray="0 999" stroke-opacity="0"/>
+      <text x="20" y="119" font-size="9" fill="var(--redup)" text-anchor="middle">0</text>
+      <text x="180" y="119" font-size="9" fill="var(--redup)" text-anchor="middle">50 °C</text>
+    </svg>
+    <div class="nilai" id="nilaiSuhu">--</div>
+    <div class="label-suhu" id="labelSuhu">&nbsp;</div>
+    <div class="ket" id="ketSuhu">Belum ada data</div>
+    <div class="ringkas">
+      <span class="chip" id="chipLembap">Kelembapan --</span>
+      <span class="chip" id="chipKipas">Kipas --</span>
+    </div>
+  </div>
+  <canvas id="grafik" aria-label="Grafik suhu"></canvas>
+  <div class="baris" style="margin-top:10px">
+    <button id="tblCsv">Unduh CSV</button>
+    <button id="tblHapus">Hapus grafik</button>
+  </div>
+</section>
+
+<!-- KENDALI -->
+<section class="kartu">
+  <h2>Pola dingin</h2>
+  <div class="baris">
+    <button id="tblUji" class="dingin besar" disabled>UJI</button>
+    <button id="tblStop" class="bahaya besar" disabled>STOP</button>
+  </div>
+  <div class="progres"><div id="batang"></div></div>
+  <div class="fase"><span id="teksDenyut">Siaga</span><b id="teksFase"></b></div>
+</section>
+
+<!-- KIPAS -->
+<section class="kartu">
+  <h2>Kipas heatsink</h2>
+  <div class="segmen">
+    <button id="kAuto" disabled>AUTO</button>
+    <button id="kOn" disabled>ON</button>
+    <button id="kOff" disabled>OFF</button>
+  </div>
+  <div class="info">AUTO berarti kipas menyala selama pola dingin dan 1 menit sesudahnya. ON dan OFF hanya untuk uji, jangan biarkan OFF saat alarm dipakai.</div>
+</section>
+
+<!-- ALARM -->
+<section class="kartu">
+  <h2>Alarm</h2>
+  <input type="time" id="inputAlarm" value="05:30" aria-label="Jam alarm">
+  <div class="baris" style="margin-top:10px">
+    <button id="tblSimpanAlarm" class="utama" disabled>Simpan alarm</button>
+    <button id="tblMatikanAlarm" disabled>Matikan</button>
+  </div>
+  <div class="info">Status alarm <b id="statusAlarm">belum diketahui</b>. Berbunyi setiap hari.</div>
+</section>
+
+<!-- POLA -->
+<section class="kartu">
+  <h2>Pengaturan pola</h2>
+  <div class="pola">
+    <div><label for="pNyala">Nyala (detik)</label><input type="number" id="pNyala" min="1" max="30" value="6"></div>
+    <div><label for="pJeda">Jeda (detik)</label><input type="number" id="pJeda" min="1" max="120" value="15"></div>
+    <div><label for="pJumlah">Jumlah</label><input type="number" id="pJumlah" min="1" max="30" value="8"></div>
+  </div>
+  <button id="tblPola" class="lebar" style="margin-top:10px" disabled>Simpan pola</button>
+  <div class="info" id="infoPola">Lama satu alarm sekitar 2 menit 33 detik.</div>
+</section>
+
+<!-- CATATAN -->
+<section class="kartu">
+  <details id="lipatLog">
+    <summary>Catatan komunikasi dan perintah manual</summary>
+    <div class="log" id="log"></div>
+    <div class="baris" style="margin-top:8px">
+      <input type="text" id="inputManual" placeholder="contoh STATUS" autocapitalize="characters" style="font-size:16px">
+      <button id="tblManual" style="flex:0 0 auto" disabled>Kirim</button>
+    </div>
+  </details>
+</section>
+
+<section class="kartu">
+  <h2>Mode demo</h2>
+  <button id="tblDemo" class="lebar">Coba tanpa alat (mode demo)</button>
+  <div class="info">Mode demo meniru alat TWA versi DHT11 dan kipas di dalam HP. Berguna untuk belajar memakai aplikasi atau presentasi tanpa alat.</div>
+</section>
+
+<footer>TWA Bluetooth v2 · Kelompok D1 Proyek Kreatif Elektro 1 · Teknik Elektro UNS</footer>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* =========================================================
+   1. Alamat layanan Bluetooth. Harus sama dengan kode ESP.
+   ========================================================= */
+const UUID_LAYANAN = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";   // Nordic UART
+const UUID_RX      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";   // HP menulis ke ESP
+const UUID_TX      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";   // ESP mengirim ke HP
+const AWALAN_NAMA  = "TWA";                                    // nama alat diawali TWA
+const JEDA_PERINTAH_MS = 600;   // jarak antar perintah, supaya ESP sempat memproses satu per satu
+
+/* =========================================================
+   2. Keadaan aplikasi
+   ========================================================= */
+const S = {
+  tersambung:false, demo:false, perangkat:null, rx:null,
+  antrean:[], sibuk:false, sisa:"",
+  data:[],                     // riwayat suhu {t: waktu ms, v: suhu}
+  pola:{nyala:6, jeda:15, jumlah:8},
+  dingin:false, denyut:0, total:8, tFase:0,
+  lembap:null, kipas:null, modeKipas:null,
+};
+const $ = id => document.getElementById(id);
+
+/* =========================================================
+   3. Bantuan tampilan
+   ========================================================= */
+function toast(teks){
+  const t=$("toast"); t.textContent=teks; t.classList.add("tampil");
+  clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("tampil"),2600);
+}
+function catat(teks, jenis){
+  const log=$("log"), d=document.createElement("div");
+  if(jenis) d.className=jenis;
+  const w=new Date().toLocaleTimeString("id-ID",{hour12:false});
+  d.textContent=w+"  "+(jenis==="k"?"> ":"")+teks;
+  log.appendChild(d);
+  while(log.childNodes.length>300) log.removeChild(log.firstChild);
+  log.scrollTop=log.scrollHeight;
+}
+function dua(n){ return String(n).padStart(2,"0"); }
+function jamSekarang(denganDetik){
+  const d=new Date();
+  return dua(d.getHours())+":"+dua(d.getMinutes())+(denganDetik?":"+dua(d.getSeconds()):"");
+}
+function lamaPola(p){
+  const det=p.jumlah*p.nyala+(p.jumlah-1)*p.jeda;
+  const m=Math.floor(det/60), s=det%60;
+  return (m? m+" menit ":"")+(s? s+" detik":"");
+}
+function aturTombol(){
+  const on=S.tersambung;
+  ["tblSinkron","tblPutus","tblUji","tblStop","tblSimpanAlarm","tblMatikanAlarm","tblPola","tblManual","kAuto","kOn","kOff"]
+    .forEach(id=>$(id).disabled=!on);
+  $("tblSambung").textContent = on ? (S.demo?"Mode demo aktif":"Tersambung") : (S.perangkat&&!S.demo?"Sambung ulang":"Sambungkan ke TWA");
+  $("tblSambung").disabled = on;
+  $("tblDemo").textContent = S.demo ? "Keluar dari mode demo" : "Coba tanpa alat (mode demo)";
+  const pil=$("pil");
+  pil.className="pil"+(on?(S.demo?" demo":" on"):"");
+  pil.textContent = on ? (S.demo?"Demo":"Tersambung") : "Belum tersambung";
+}
+
+/* =========================================================
+   4. Mengirim perintah. Perintah masuk antrean lalu dikirim
+      satu per satu dengan jeda, karena ESP memproses satu
+      perintah dalam satu waktu.
+   ========================================================= */
+function kirimPerintah(cmd){
+  if(!S.tersambung){ toast("Belum tersambung ke alat"); return; }
+  if(cmd.length>19){ toast("Perintah terlalu panjang, maksimal 19 huruf"); return; }
+  S.antrean.push(cmd);
+  if(!S.sibuk) prosesAntrean();
+}
+async function prosesAntrean(){
+  S.sibuk=true;
+  while(S.antrean.length && S.tersambung){
+    const cmd=S.antrean.shift();
+    catat(cmd,"k");
+    try{
+      if(S.demo) Demo.terima(cmd);
+      else{
+        const data=new TextEncoder().encode(cmd+"\n");
+        if(S.rx.properties && S.rx.properties.writeWithoutResponse && S.rx.writeValueWithoutResponse)
+          await S.rx.writeValueWithoutResponse(data);
+        else await S.rx.writeValue(data);
+      }
+    }catch(e){ catat("Gagal mengirim "+cmd+" ("+e.message+")","s"); }
+    await new Promise(r=>setTimeout(r,JEDA_PERINTAH_MS));
+  }
+  S.sibuk=false;
+}
+
+/* =========================================================
+   5. Menerima balasan. ESP mengirim potongan 20 huruf,
+      jadi potongan disambung dulu sampai ketemu ganti baris.
+   ========================================================= */
+const pengurai=new TextDecoder();
+function terimaPotongan(teks){
+  S.sisa+=teks;
+  const baris=S.sisa.split(/\r?\n/);
+  S.sisa=baris.pop();
+  baris.forEach(b=>{ b=b.trim(); if(b) olahBaris(b); });
+}
+function olahBaris(b){
+  catat(b);
+  let m;
+  if((m=b.match(/^Suhu (-?\d+(?:\.\d+)?) C$/)))      return tampilSuhu(parseFloat(m[1]));
+  if(b==="Suhu sensor error")                          return tampilSuhu(null);
+  if((m=b.match(/^Lembap (\d+) %$/)))                 { S.lembap=+m[1]; $("chipLembap").textContent="Kelembapan "+m[1]+" %"; return; }
+  if(b==="Lembap sensor error")                        { S.lembap=null; $("chipLembap").textContent="Kelembapan error"; return; }
+  if((m=b.match(/^Kipas (ON|OFF)$/)))                  { tampilKipas(m[1]==="ON"); return; }
+  if((m=b.match(/^Mode kipas (AUTO|ON|OFF)$/)))        { tampilModeKipas(m[1]); return; }
+  if((m=b.match(/^Jam (?:diatur )?(\d\d:\d\d(?::\d\d)?)$/))) { $("jamEsp").textContent=m[1]; return; }
+  if(/^Jam belum diatur/.test(b)||/^Atur jam dulu/.test(b)) { $("jamEsp").textContent="belum diatur"; return; }
+  if((m=b.match(/^Alarm (?:diatur )?(\d\d:\d\d)$/))) {
+    $("statusAlarm").textContent="aktif "+m[1]; $("inputAlarm").value=m[1]; simpanLokal("alarm",m[1]); return; }
+  if(b==="Alarm mati"||b==="Alarm dimatikan") { $("statusAlarm").textContent="mati"; return; }
+  if((m=b.match(/Pola (\d+)s nyala, (\d+)s jeda, (\d+)x/))) {
+    S.pola={nyala:+m[1],jeda:+m[2],jumlah:+m[3]};
+    $("pNyala").value=m[1]; $("pJeda").value=m[2]; $("pJumlah").value=m[3]; infoPola();
+    if(!S.dingin) S.total=S.pola.jumlah;
+    return; }
+  if((m=b.match(/[Dd]enyut (\d+) dari (\d+)/))) {
+    mulaiFase(+m[1],+m[2]);
+    if(/^ALARM/.test(b)) toast("Alarm berbunyi");
+    return; }
+  if((m=b.match(/^Sedang dingin, denyut (\d+)/))) { mulaiFase(+m[1],S.pola.jumlah); return; }
+  if(b==="Siaga"||b==="Tidak ada alarm berjalan") { selesaiDingin(); return; }
+  if(/^(Alarm selesai|Alarm dihentikan|Dihentikan dengan tombol)$/.test(b)) { selesaiDingin(); toast(b); return; }
+  if(/^Berhenti, sisi kulit terlalu panas/.test(b)) { selesaiDingin(); toast("Berhenti, sisi kulit panas. Cek kabel Peltier!"); return; }
+  if(/^(Format salah|Perintah tidak dikenal)/.test(b)) { toast(b); return; }
+  if(b==="Pola dingin sedang berjalan") { toast(b); return; }
+}
+
+function tampilKipas(on){
+  S.kipas=on; const c=$("chipKipas");
+  c.textContent="Kipas "+(on?"ON":"OFF"); c.className="chip"+(on?" on":"");
+}
+function tampilModeKipas(m){
+  S.modeKipas=m;
+  [["kAuto","AUTO"],["kOn","ON"],["kOff","OFF"]].forEach(([id,v])=>$(id).classList.toggle("pilih",v===m));
+}
+
+/* =========================================================
+   6. Suhu, gauge, dan grafik
+   ========================================================= */
+function tampilSuhu(v){
+  const busur=$("busur");
+  if(v===null){
+    $("nilaiSuhu").textContent="--"; $("labelSuhu").textContent="Sensor error";
+    $("ketSuhu").textContent="Cek kabel DHT11 (3V3, DATA, GND)"; busur.setAttribute("stroke-opacity","0"); return;
+  }
+  const panjang=Math.PI*80, frac=Math.max(0,Math.min(1,v/50));
+  busur.setAttribute("stroke-dasharray",(panjang*frac).toFixed(1)+" 999");
+  busur.setAttribute("stroke-opacity", frac>0 ? "1" : "0");
+  let warna="var(--dingin)", label="Dingin";
+  if(v<15){label="Sangat dingin";}
+  else if(v<25){label="Dingin";}
+  else if(v<35){label="Normal"; warna="var(--ok)";}
+  else if(v<45){label="Hangat"; warna="var(--peringatan)";}
+  else {label="Terlalu panas"; warna="var(--bahaya)";}
+  busur.setAttribute("stroke",warna);
+  $("nilaiSuhu").textContent=v.toFixed(1)+"°";
+  $("labelSuhu").textContent=label;
+  $("ketSuhu").textContent="Diperbarui "+jamSekarang(true);
+  S.data.push({t:Date.now(),v,h:S.lembap,k:S.kipas});
+  if(S.data.length>2000) S.data.shift();
+  gambarGrafik();
+}
+function gambarGrafik(){
+  const c=$("grafik"), r=window.devicePixelRatio||1;
+  const W=c.clientWidth, H=c.clientHeight;
+  c.width=W*r; c.height=H*r;
+  const g=c.getContext("2d"); g.setTransform(r,0,0,r,0,0); g.clearRect(0,0,W,H);
+  const gaya=getComputedStyle(document.documentElement);
+  const redup=gaya.getPropertyValue("--redup").trim(), garis=gaya.getPropertyValue("--garis").trim();
+  const biru=gaya.getPropertyValue("--dingin").trim();
+  g.font="11px system-ui"; g.fillStyle=redup;
+  const d=S.data.filter(p=>p.t>=Date.now()-10*60*1000);   // 10 menit terakhir
+  if(d.length<2){ g.fillText("Grafik muncul setelah ada 2 data suhu",10,H/2); return; }
+  let mn=Math.min(...d.map(p=>p.v)), mx=Math.max(...d.map(p=>p.v));
+  if(mx-mn<2){ const t=(mx+mn)/2; mn=t-1; mx=t+1; }
+  const kiri=34, kanan=8, atas=10, bawah=20;
+  const x=t=>kiri+(t-d[0].t)/(d[d.length-1].t-d[0].t||1)*(W-kiri-kanan);
+  const y=v=>atas+(mx-v)/(mx-mn)*(H-atas-bawah);
+  g.strokeStyle=garis; g.lineWidth=1;
+  [mn,(mn+mx)/2,mx].forEach(v=>{ g.beginPath(); g.moveTo(kiri,y(v)); g.lineTo(W-kanan,y(v)); g.stroke();
+    g.fillText(v.toFixed(1),2,y(v)+4); });
+  const fmt=t=>new Date(t).toLocaleTimeString("id-ID",{hour12:false,hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  g.fillText(fmt(d[0].t),kiri,H-5);
+  g.textAlign="right"; g.fillText(fmt(d[d.length-1].t),W-kanan,H-5); g.textAlign="left";
+  g.strokeStyle=biru; g.lineWidth=2; g.beginPath();
+  d.forEach((p,i)=> i? g.lineTo(x(p.t),y(p.v)) : g.moveTo(x(p.t),y(p.v)) ); g.stroke();
+}
+function unduhCsv(){
+  if(!S.data.length){ toast("Belum ada data suhu"); return; }
+  const isi="waktu,suhu_C,kelembapan_persen,kipas\n"+S.data.map(p=>{
+    const d=new Date(p.t);
+    return d.getFullYear()+"-"+dua(d.getMonth()+1)+"-"+dua(d.getDate())+" "+
+           dua(d.getHours())+":"+dua(d.getMinutes())+":"+dua(d.getSeconds())+","+p.v.toFixed(1)+","+
+           (p.h==null?"":p.h)+","+(p.k==null?"":(p.k?"ON":"OFF"));
+  }).join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([isi],{type:"text/csv"}));
+  const d=new Date();
+  a.download="suhu_TWA_"+d.getFullYear()+dua(d.getMonth()+1)+dua(d.getDate())+"_"+dua(d.getHours())+dua(d.getMinutes())+".csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  toast("File CSV diunduh");
+}
+
+/* =========================================================
+   7. Tampilan denyut dingin
+   ========================================================= */
+function mulaiFase(n,total){
+  S.dingin=true; S.denyut=n; S.total=total; S.tFase=Date.now();
+  perbaruiFase();
+}
+function selesaiDingin(){
+  S.dingin=false; S.denyut=0;
+  $("batang").style.width="0"; $("teksDenyut").textContent="Siaga";
+  $("teksFase").textContent=""; $("teksFase").className="";
+}
+function perbaruiFase(){
+  if(!S.dingin) return;
+  const lewat=(Date.now()-S.tFase)/1000, p=S.pola;
+  const fase = lewat<p.nyala ? "dingin" : "jeda";
+  const sisa = fase==="dingin" ? p.nyala-lewat : p.nyala+p.jeda-lewat;
+  $("teksDenyut").textContent="Denyut "+S.denyut+" dari "+S.total;
+  const tf=$("teksFase"); tf.className=fase;
+  tf.textContent = (fase==="dingin"?"Dingin ":"Jeda ")+Math.max(0,Math.ceil(sisa))+" s";
+  const selesai=((S.denyut-1)*(p.nyala+p.jeda)+Math.min(lewat,p.nyala+p.jeda))/(S.total*p.nyala+(S.total-1)*p.jeda);
+  $("batang").style.width=Math.min(100,selesai*100).toFixed(1)+"%";
+}
+setInterval(perbaruiFase,250);
+
+/* =========================================================
+   8. Menyambung ke alat lewat Web Bluetooth
+   ========================================================= */
+async function sambungkan(){
+  if(!navigator.bluetooth){ $("tidakDidukung").classList.remove("tersembunyi"); toast("Browser tidak mendukung Bluetooth"); return; }
+  try{
+    if(!S.perangkat){
+      $("infoKoneksi").textContent="Pilih TWA-Gelang di jendela yang muncul.";
+      S.perangkat=await navigator.bluetooth.requestDevice({
+        filters:[{services:[UUID_LAYANAN]},{namePrefix:AWALAN_NAMA}],
+        optionalServices:[UUID_LAYANAN]
+      });
+      S.perangkat.addEventListener("gattserverdisconnected",terputus);
+    }
+    $("infoKoneksi").textContent="Menyambung ke "+(S.perangkat.name||"alat")+"...";
+    const server=await S.perangkat.gatt.connect();
+    const layanan=await server.getPrimaryService(UUID_LAYANAN);
+    S.rx=await layanan.getCharacteristic(UUID_RX);
+    const tx=await layanan.getCharacteristic(UUID_TX);
+    tx.addEventListener("characteristicvaluechanged",e=>terimaPotongan(pengurai.decode(e.target.value)));
+    await tx.startNotifications();
+    S.tersambung=true; S.sisa="";
+    $("infoKoneksi").textContent="Tersambung ke "+(S.perangkat.name||"alat")+".";
+    catat("Tersambung ke "+(S.perangkat.name||"alat"),"s");
+    aturTombol();
+    setelahTersambung();
+  }catch(e){
+    if(e.name==="NotFoundError"){ $("infoKoneksi").textContent="Tidak ada alat yang dipilih."; }
+    else { $("infoKoneksi").textContent="Gagal menyambung ("+e.message+"). Coba lagi."; catat("Gagal "+e.message,"s"); }
+    S.tersambung=false; aturTombol();
+  }
+}
+function setelahTersambung(){
+  // Tunggu sapaan ESP, lalu kirim jam HP, nyalakan pantau suhu, dan minta status
+  setTimeout(()=>{
+    kirimPerintah("JAM "+jamSekarang(true));
+    kirimPerintah("PANTAU ON");
+    kirimPerintah("STATUS");
+  },1500);
+}
+function terputus(){
+  if(S.demo) return;
+  S.tersambung=false; S.antrean=[]; selesaiDingin();
+  $("infoKoneksi").textContent="Sambungan terputus. Alarm tetap berjalan di alat. Ketuk Sambung ulang.";
+  catat("Terputus","s"); aturTombol();
+}
+function putuskan(){
+  if(S.demo){ keluarDemo(); return; }
+  if(S.perangkat && S.perangkat.gatt.connected) S.perangkat.gatt.disconnect();
+}
+
+/* =========================================================
+   9. Mode demo. Meniru perilaku kode ESP versi Bluetooth v2
+      di dalam HP, lengkap dengan suhu yang turun saat dingin.
+   ========================================================= */
+const Demo = {
+  jam:null, alarm:"05:30", pola:{nyala:6,jeda:15,jumlah:8}, pantau:true,
+  suhu:31, lembap:62, peltier:false, dingin:false, denyut:0, tFase:0, h:null, tPantau:0,
+  mode:"AUTO", kipas:false, tSelesai:0,
+  setKipas(on){ if(on!==this.kipas){ this.kipas=on; this.kirim("Kipas "+(on?"ON":"OFF")); } },
+  aturKipas(){ const setelah=this.tSelesai && Date.now()-this.tSelesai<60000;
+    this.setKipas(this.mode==="ON" ? true : this.mode==="OFF" ? false : (this.dingin||setelah)); },
+  selesai(t){ this.dingin=false; this.peltier=false; this.tSelesai=Date.now(); this.kirim(t); },
+  kirim(t){ setTimeout(()=>terimaPotongan(t+"\r\n"),80); },
+  mulai(){
+    this.jam=null; this.suhu=31; this.lembap=62; this.dingin=false; this.peltier=false; this.kipas=false; this.mode="AUTO"; this.tSelesai=0;
+    this.h=setInterval(()=>this.detak(),250);
+    this.kirim("Tersambung ke TWA"); this.kirim("Atur jam dulu, ketik JAM 13:45");
+  },
+  henti(){ clearInterval(this.h); },
+  detak(){
+    // model sederhana DHT11 dekat kulit: turun pelan saat dingin, naik lagi saat jeda, resolusi 1 derajat
+    const sasaran=this.peltier?24:31, tau=this.peltier?10:20;
+    this.suhu+=(sasaran-this.suhu)*(0.25/tau);
+    this.lembap+=((this.peltier?68:62)-this.lembap)*(0.25/25);
+    const now=Date.now();
+    if(this.dingin){
+      const lewat=(now-this.tFase)/1000;
+      if(this.peltier && lewat>=this.pola.nyala){
+        this.peltier=false; this.tFase=now-this.pola.nyala*1000;
+        if(this.denyut>=this.pola.jumlah){ this.selesai("Alarm selesai"); }
+      } else if(!this.peltier && lewat>=this.pola.nyala+this.pola.jeda){
+        this.denyut++; this.peltier=true; this.tFase=now; this.kirim("Denyut "+this.denyut+" dari "+this.pola.jumlah);
+      }
+    }
+    this.aturKipas();
+    const jarak=this.dingin?3000:10000;
+    if((this.dingin||this.pantau) && now-this.tPantau>=jarak){ this.tPantau=now;
+      this.kirim("Suhu "+Math.round(this.suhu).toFixed(1)+" C"); this.kirim("Lembap "+Math.round(this.lembap)+" %"); }
+  },
+  mulaiDingin(p){ this.dingin=true; this.peltier=true; this.denyut=1; this.tFase=Date.now();
+    this.kirim(p+", denyut 1 dari "+this.pola.jumlah); },
+  terima(cmd){
+    const p=cmd.trim().toUpperCase().replace(/\./g,":"); let m;
+    if((m=p.match(/^JAM (\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/))){ this.jam=dua(+m[1])+":"+dua(+m[2])+":"+dua(+(m[3]||0)); this.kirim("Jam diatur "+this.jam); }
+    else if(p==="ALARM OFF"){ this.alarm=null; this.kirim("Alarm dimatikan"); }
+    else if((m=p.match(/^ALARM (\d{1,2}):(\d{1,2})$/))){ this.alarm=dua(+m[1])+":"+dua(+m[2]); this.kirim("Alarm diatur "+this.alarm); }
+    else if(p==="UJI"){ this.dingin? this.kirim("Pola dingin sedang berjalan") : this.mulaiDingin("Uji dingin"); }
+    else if(p==="STOP"){ if(this.dingin){ this.selesai("Alarm dihentikan"); } else this.kirim("Tidak ada alarm berjalan"); }
+    else if(p==="SUHU"){ this.kirim("Suhu "+Math.round(this.suhu).toFixed(1)+" C"); this.kirim("Lembap "+Math.round(this.lembap)+" %"); }
+    else if((m=p.match(/^KIPAS (AUTO|ON|OFF)$/))){ this.mode=m[1]; this.aturKipas(); this.kirim("Mode kipas "+m[1]); }
+    else if(p==="PANTAU ON"){ this.pantau=true; this.kirim("Pantau suhu ON, tiap 10 detik"); }
+    else if(p==="PANTAU OFF"){ this.pantau=false; this.kirim("Pantau suhu OFF"); }
+    else if((m=p.match(/^POLA (\d+) (\d+) (\d+)$/))){ this.pola={nyala:+m[1],jeda:+m[2],jumlah:+m[3]};
+      this.kirim("Diubah, Pola "+m[1]+"s nyala, "+m[2]+"s jeda, "+m[3]+"x"); }
+    else if(p==="STATUS"){
+      this.kirim(this.jam?"Jam "+jamSekarang(true):"Jam belum diatur, ketik JAM 13:45");
+      this.kirim(this.alarm?"Alarm "+this.alarm:"Alarm mati");
+      this.kirim("Pola "+this.pola.nyala+"s nyala, "+this.pola.jeda+"s jeda, "+this.pola.jumlah+"x");
+      this.kirim(this.dingin?"Sedang dingin, denyut "+this.denyut:"Siaga");
+      this.kirim("Suhu "+Math.round(this.suhu).toFixed(1)+" C");
+      this.kirim("Lembap "+Math.round(this.lembap)+" %");
+      this.kirim("Kipas "+(this.kipas?"ON":"OFF"));
+      this.kirim("Mode kipas "+this.mode);
+      this.kirim(this.pantau?"Pantau suhu ON":"Pantau suhu OFF");
+    }
+    else this.kirim("Perintah tidak dikenal, ketik BANTUAN");
+  }
+};
+function masukDemo(){
+  if(S.tersambung && !S.demo){ toast("Putuskan alat dulu sebelum mode demo"); return; }
+  S.demo=true; S.tersambung=true; S.antrean=[]; S.sisa="";
+  $("infoKoneksi").textContent="Mode demo. Data berasal dari tiruan, bukan alat sungguhan.";
+  aturTombol(); Demo.mulai(); setelahTersambung();
+}
+function keluarDemo(){
+  Demo.henti(); S.demo=false; S.tersambung=false; S.antrean=[]; selesaiDingin();
+  $("infoKoneksi").textContent="Nyalakan alat TWA, lalu ketuk Sambungkan.";
+  $("jamEsp").textContent="belum diatur"; $("chipLembap").textContent="Kelembapan --";
+  $("chipKipas").textContent="Kipas --"; $("chipKipas").className="chip"; tampilModeKipas(null); aturTombol();
+}
+
+/* =========================================================
+   10. Tombol-tombol
+   ========================================================= */
+function bacaPola(){
+  const n=Math.round(+$("pNyala").value), j=Math.round(+$("pJeda").value), k=Math.round(+$("pJumlah").value);
+  if(!(n>=1&&n<=30&&j>=1&&j<=120&&k>=1&&k<=30)) return null;
+  return {nyala:n,jeda:j,jumlah:k};
+}
+function infoPola(){
+  const p=bacaPola();
+  $("infoPola").textContent = p ? "Lama satu alarm sekitar "+lamaPola(p)+"." : "Nyala 1 sampai 30, jeda 1 sampai 120, jumlah 1 sampai 30.";
+}
+function simpanLokal(k,v){ try{ localStorage.setItem("twa_"+k,v); }catch(e){} }
+function ambilLokal(k){ try{ return localStorage.getItem("twa_"+k); }catch(e){ return null; } }
+
+$("tblSambung").onclick=sambungkan;
+$("tblPutus").onclick=putuskan;
+$("tblSinkron").onclick=()=>{ kirimPerintah("JAM "+jamSekarang(true)); };
+$("tblUji").onclick=()=>kirimPerintah("UJI");
+$("tblStop").onclick=()=>kirimPerintah("STOP");
+$("tblSimpanAlarm").onclick=()=>{
+  const v=$("inputAlarm").value;
+  if(!/^\d\d:\d\d$/.test(v)){ toast("Pilih jam alarm dulu"); return; }
+  kirimPerintah("ALARM "+v);
+};
+$("tblMatikanAlarm").onclick=()=>kirimPerintah("ALARM OFF");
+$("kAuto").onclick=()=>kirimPerintah("KIPAS AUTO");
+$("kOn").onclick=()=>kirimPerintah("KIPAS ON");
+$("kOff").onclick=()=>kirimPerintah("KIPAS OFF");
+$("tblPola").onclick=()=>{
+  const p=bacaPola(); if(!p){ toast("Nilai pola di luar batas"); return; }
+  kirimPerintah("POLA "+p.nyala+" "+p.jeda+" "+p.jumlah);
+};
+["pNyala","pJeda","pJumlah"].forEach(id=>$(id).addEventListener("input",infoPola));
+$("tblManual").onclick=()=>{ const v=$("inputManual").value.trim(); if(v){ kirimPerintah(v); $("inputManual").value=""; } };
+$("inputManual").addEventListener("keydown",e=>{ if(e.key==="Enter") $("tblManual").click(); });
+$("tblCsv").onclick=unduhCsv;
+$("tblHapus").onclick=()=>{ S.data=[]; gambarGrafik(); toast("Grafik dihapus"); };
+$("tblDemo").onclick=()=> S.demo ? keluarDemo() : masukDemo();
+window.addEventListener("resize",gambarGrafik);
+
+/* =========================================================
+   11. Saat halaman dibuka
+   ========================================================= */
+if(!navigator.bluetooth) $("tidakDidukung").classList.remove("tersembunyi");
+const alarmTersimpan=ambilLokal("alarm"); if(alarmTersimpan) $("inputAlarm").value=alarmTersimpan;
+infoPola(); aturTombol(); gambarGrafik();
+// Supaya bisa dibuka tanpa internet setelah kunjungan pertama
+if("serviceWorker" in navigator && (location.protocol==="https:"||location.hostname==="localhost")){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+</script>
+</body>
+</html>
