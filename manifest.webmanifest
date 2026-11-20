@@ -1,11 +1,11 @@
 {
-  "name": "TWA Bluetooth",
+  "name": "TWA Gelang Alarm Dingin",
   "short_name": "TWA",
-  "description": "Pengendali Thermal Wearable Alarm lewat Bluetooth",
+  "description": "Aplikasi gelang alarm dingin Thermal Wearable Alarm",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f1f5f9",
+  "background_color": "#eef2f6",
   "theme_color": "#0e7490",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
