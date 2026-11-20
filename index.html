@@ -4,346 +4,362 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>TWA</title>
-<meta name="description" content="Aplikasi gelang alarm dingin Thermal Wearable Alarm">
+<meta name="description" content="Aplikasi pengendali gelang Thermal Wearable Alarm lewat Bluetooth">
 <meta name="theme-color" content="#0e7490">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
-/* ================= 1. WARNA DAN TAMPILAN =================
-   Ubah warna di sini. Mode gelap mengikuti pengaturan HP. */
+/* Warna. Mode terang bawaan, mode gelap mengikuti HP. */
 :root{
-  --bg:#eef2f6; --kartu:#ffffff; --teks:#0f172a; --redup:#64748b; --garis:#e2e8f0; --lunak:#f8fafc;
-  --utama:#0e7490; --utama-teks:#ffffff; --dingin:#2563eb; --bahaya:#dc2626; --ok:#16a34a; --waspada:#d97706;
-  --bayang:0 1px 3px rgba(15,23,42,.08);
+  --bg:#f1f5f9; --kartu:#ffffff; --teks:#0f172a; --redup:#64748b; --garis:#e2e8f0;
+  --utama:#0e7490; --utama-teks:#ffffff; --dingin:#2563eb; --bahaya:#dc2626;
+  --ok:#16a34a; --peringatan:#d97706; --lunak:#f8fafc; --bayang:0 1px 3px rgba(15,23,42,.08);
 }
 @media (prefers-color-scheme: dark){
-  :root{ --bg:#0b1220; --kartu:#131c2e; --teks:#e2e8f0; --redup:#94a3b8; --garis:#24324a; --lunak:#0f1829;
-         --utama:#22a6c3; --utama-teks:#04121a; --dingin:#60a5fa; --bahaya:#f87171; --ok:#4ade80; --waspada:#fbbf24; --bayang:none; }
+  :root{
+    --bg:#0b1220; --kartu:#131c2e; --teks:#e2e8f0; --redup:#94a3b8; --garis:#24324a;
+    --utama:#22a6c3; --utama-teks:#04121a; --dingin:#60a5fa; --bahaya:#f87171;
+    --ok:#4ade80; --peringatan:#fbbf24; --lunak:#0f1829; --bayang:none;
+  }
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--teks);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45}
-.wadah{max-width:520px;margin:0 auto;padding:10px 16px calc(96px + env(safe-area-inset-bottom))}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0 14px}
-.merek{display:flex;align-items:center;gap:10px}
-.merek img{width:36px;height:36px;border-radius:10px}
-.merek b{font-size:19px;display:block;line-height:1.1}
-.merek small{color:var(--redup);font-size:12.5px}
-.pil{font-size:12.5px;font-weight:700;padding:5px 11px;border-radius:999px;background:var(--garis);color:var(--redup);white-space:nowrap}
+.wadah{max-width:520px;margin:0 auto;padding:12px 16px calc(96px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0 12px}
+header h1{font-size:20px;margin:0}
+header small{display:block;color:var(--redup);font-size:12.5px;font-weight:400}
+.pil{font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--garis);color:var(--redup);white-space:nowrap}
 .pil.on{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
-.kartu{background:var(--kartu);border:1px solid var(--garis);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:var(--bayang)}
-.kartu h2{font-size:13px;margin:0 0 10px;color:var(--redup);text-transform:uppercase;letter-spacing:.05em}
-button{font:inherit;font-weight:700;border-radius:14px;padding:12px 14px;min-height:48px;cursor:pointer;
-  background:var(--lunak);color:var(--teks);border:1px solid var(--garis)}
+.kartu{background:var(--kartu);border:1px solid var(--garis);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:var(--bayang)}
+.kartu h2{font-size:13px;margin:0 0 10px;color:var(--redup);text-transform:uppercase;letter-spacing:.04em}
+button{font:inherit;border-radius:12px;padding:12px 14px;font-weight:700;cursor:pointer;background:var(--lunak);color:var(--teks);border:1px solid var(--garis);min-height:48px}
 button:disabled{opacity:.45;cursor:not-allowed}
 button.utama{background:var(--utama);color:var(--utama-teks);border-color:transparent}
 button.dingin{background:var(--dingin);color:#fff;border-color:transparent}
 button.bahaya{background:var(--bahaya);color:#fff;border-color:transparent}
+button.pilih{background:var(--utama);color:var(--utama-teks);border-color:transparent}
 .lebar{width:100%}
+.besar{font-size:18px;min-height:56px}
 .baris{display:flex;gap:10px;align-items:center}
-.baris>*{flex:1}
+.baris>*{flex:1;min-width:0}
+.sebaris{display:flex;gap:12px;align-items:center;justify-content:space-between}
+.dua{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tiga{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .info{color:var(--redup);font-size:13.5px;margin-top:8px}
-.tersembunyi{display:none!important}
-.peringatan{background:color-mix(in srgb,var(--waspada) 14%,transparent);border:1px solid color-mix(in srgb,var(--waspada) 45%,transparent);
-  border-radius:14px;padding:12px 14px;font-size:14px;margin-bottom:12px}
-.peringatan b{display:block;margin-bottom:2px}
-.peringatan.merah{background:color-mix(in srgb,var(--bahaya) 12%,transparent);border-color:color-mix(in srgb,var(--bahaya) 45%,transparent)}
-
-/* sambung */
-.sambung{text-align:center;padding:22px 16px}
-.sambung h3{margin:8px 0 4px;font-size:18px}
-.sambung p{margin:0 0 14px;color:var(--redup);font-size:14px}
-.ringkasKoneksi{display:flex;justify-content:space-between;align-items:center;font-size:14px}
-.ringkasKoneksi span{color:var(--redup)}
-.ringkasKoneksi button{min-height:36px;padding:6px 12px;font-size:13px;flex:0 0 auto}
-
-/* alarm berikutnya */
-.alarmUtama{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.alarmUtama .jam{font-size:44px;font-weight:800;line-height:1;letter-spacing:-.02em}
-.alarmUtama .sisa{color:var(--redup);font-size:14px;margin-top:4px}
-.saklar{position:relative;width:58px;height:34px;flex:0 0 auto}
-.saklar input{opacity:0;width:0;height:0}
-.saklar span{position:absolute;inset:0;border-radius:999px;background:var(--garis);transition:.2s;cursor:pointer}
-.saklar span::after{content:"";position:absolute;width:26px;height:26px;left:4px;top:4px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.redup{color:var(--redup);font-size:12.5px;display:block}
+.jamBesar{font-size:46px;font-weight:800;line-height:1.1}
+/* saklar */
+.saklar{position:relative;width:60px;height:34px;flex:none}
+.saklar input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;z-index:1;cursor:pointer}
+.saklar span{position:absolute;inset:0;border-radius:999px;background:var(--garis);transition:.2s}
+.saklar span::after{content:"";position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:#fff;transition:.2s}
 .saklar input:checked+span{background:var(--utama)}
-.saklar input:checked+span::after{transform:translateX(24px)}
-.saklar input:disabled+span{opacity:.45;cursor:not-allowed}
-
-/* dua kartu kecil */
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.grid2 .kartu{margin:0;display:flex;flex-direction:column;align-items:center;text-align:center}
-.cincin{position:relative;width:112px;height:112px}
-.cincin svg{width:112px;height:112px;transform:rotate(-90deg)}
-.cincin .isi{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.cincin .isi b{font-size:26px;line-height:1}
-.cincin .isi small{color:var(--redup);font-size:12px;margin-top:3px}
-.keterangan{font-weight:700;font-size:14px;margin-top:8px}
-.kecil{color:var(--redup);font-size:12.5px}
-.chip{display:inline-block;font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--lunak);border:1px solid var(--garis);color:var(--redup);margin:6px 3px 0}
-.chip.on{background:color-mix(in srgb,var(--dingin) 15%,transparent);color:var(--dingin);border-color:transparent}
-
-/* pola berjalan */
+.saklar input:checked+span::after{transform:translateX(26px)}
+.saklar input:disabled{cursor:not-allowed}
+.saklar input:disabled+span{opacity:.45}
+/* cincin */
+.cincin{text-align:center}
+.cincin svg{width:100%;max-width:130px;height:auto}
+.cincin .lat{fill:none;stroke:var(--garis);stroke-width:10}
+.cincin .isi{fill:none;stroke-width:10;stroke-linecap:round;transform:rotate(-90deg);transform-box:fill-box;transform-origin:center;transition:stroke-dasharray .5s}
+.cincin text{font-size:22px;font-weight:800;fill:var(--teks)}
+.cincin b{display:block;font-size:15px}
+.cincin .ket{font-size:13px;color:var(--redup)}
+/* progres */
 .progres{height:12px;border-radius:999px;background:var(--garis);overflow:hidden;margin:12px 0 6px}
 .progres div{height:100%;width:0;background:var(--dingin);transition:width .4s}
 .fase{display:flex;justify-content:space-between;font-size:14px}
-.fase b.dingin{color:var(--dingin)} .fase b.jeda{color:var(--redup)}
-.besar{font-size:19px;min-height:60px}
-
-/* alarm */
-input[type=time],input[type=number],input[type=text]{font:inherit;font-size:20px;padding:10px 12px;border-radius:14px;
-  border:1px solid var(--garis);background:var(--lunak);color:var(--teks);width:100%;min-height:50px}
-select{font:inherit;font-size:40px;font-weight:800;text-align:center;text-align-last:center;padding:10px 6px;border-radius:14px;
-  border:1px solid var(--garis);background:var(--lunak);color:var(--teks);width:100%;min-height:72px;-webkit-appearance:none;appearance:none}
-.pilihJam{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
-.pilihJam span{font-size:40px;font-weight:800}
-.segmen button.pilih{background:var(--utama);color:var(--utama-teks);border-color:transparent}
-.pola{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+/* isian */
+input[type=number],input[type=text],select{font:inherit;font-size:20px;padding:10px 12px;border-radius:12px;border:1px solid var(--garis);background:var(--lunak);color:var(--teks);width:100%;min-height:48px;text-align:center}
+select{font-size:30px;font-weight:700;min-height:60px;appearance:none;-webkit-appearance:none;text-align-last:center}
+.jamPil{display:flex;align-items:center;gap:8px;font-size:30px;font-weight:700}
 .pola label{font-size:12.5px;color:var(--redup);display:block;margin-bottom:4px}
-.pola input{text-align:center}
-.segmen{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-
-/* grafik */
-canvas{width:100%;height:190px;display:block;border-radius:12px;background:var(--lunak);border:1px solid var(--garis)}
-.rentang{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
-.rentang button{min-height:40px;padding:8px;font-size:14px}
-.rentang button.pilih{background:var(--utama);color:var(--utama-teks);border-color:transparent}
-.angka3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;text-align:center}
-.angka3 div{background:var(--lunak);border:1px solid var(--garis);border-radius:12px;padding:8px}
-.angka3 b{display:block;font-size:18px}
-
-/* teknisi */
+/* data */
+canvas{width:100%;height:170px;display:block;margin-top:10px;border-radius:10px;background:var(--lunak);border:1px solid var(--garis)}
+.stat{text-align:center;background:var(--lunak);border:1px solid var(--garis);border-radius:10px;padding:8px 4px;margin-top:10px}
+.stat b{display:block;font-size:18px}
 details summary{cursor:pointer;font-weight:700;color:var(--redup);font-size:14px}
-.log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:var(--lunak);border:1px solid var(--garis);
-  border-radius:10px;padding:8px;height:200px;overflow:auto;margin-top:8px;white-space:pre-wrap}
+.log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:var(--lunak);border:1px solid var(--garis);border-radius:10px;padding:8px;height:200px;overflow:auto;margin-top:8px;white-space:pre-wrap}
 .log .k{color:var(--dingin)} .log .s{color:var(--redup)}
-
+.peringatan{background:color-mix(in srgb,var(--peringatan) 15%,transparent);border:1px solid color-mix(in srgb,var(--peringatan) 45%,transparent);border-radius:12px;padding:12px;font-size:14px;margin-bottom:12px}
+.peringatan.merah{background:color-mix(in srgb,var(--bahaya) 14%,transparent);border-color:color-mix(in srgb,var(--bahaya) 45%,transparent)}
+.peringatan b{display:block;margin-bottom:2px}
 /* menu bawah */
-nav{position:fixed;left:0;right:0;bottom:0;background:var(--kartu);border-top:1px solid var(--garis);
-  display:flex;justify-content:center;padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:5}
-nav div{display:grid;grid-template-columns:repeat(3,1fr);width:100%;max-width:520px}
-nav button{background:none;border:0;min-height:54px;padding:4px;font-size:11.5px;font-weight:600;color:var(--redup);display:flex;flex-direction:column;align-items:center;gap:2px}
-nav button svg{width:24px;height:24px}
-nav button.aktif{color:var(--utama)}
-#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:#0f172a;color:#fff;
-  padding:10px 16px;border-radius:12px;font-size:14px;max-width:90vw;transition:.25s;z-index:9;opacity:0;visibility:hidden}
+#menu{position:fixed;left:0;right:0;bottom:0;background:var(--kartu);border-top:1px solid var(--garis);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+#menu div{display:flex;max-width:520px;margin:0 auto}
+#menu button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:0;border-radius:0;background:none;color:var(--redup);font-size:12px;min-height:60px}
+#menu button.aktif{color:var(--utama)}
+#menu svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#toast{position:fixed;left:50%;bottom:calc(78px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(120px);background:#0f172a;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;max-width:90vw;transition:transform .25s,opacity .25s;z-index:9;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;visibility:hidden}
 #toast.tampil{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
-.judulHal{font-size:20px;font-weight:800;margin:2px 2px 12px}
+.tersembunyi{display:none!important}
 </style>
 </head>
 <body>
 <div class="wadah">
 
-<header>
-  <div class="merek"><img src="icon-192.png" alt=""><div><b>TWA</b><small>Gelang alarm dingin</small></div></div>
-  <span id="pil" class="pil">Tidak tersambung</span>
-</header>
-
 <div id="tidakDidukung" class="peringatan tersembunyi">
   <b>Browser ini belum bisa memakai Bluetooth</b>
-  Buka aplikasi lewat Google Chrome di HP Android. Di iPhone pakai browser Bluefy.
+  Buka halaman ini di <b style="display:inline">Google Chrome</b> pada HP Android, lewat alamat yang diawali <b style="display:inline">https://</b>. Di iPhone pakai browser <b style="display:inline">Bluefy</b>.
 </div>
-<div id="bateraiLemah" class="peringatan merah tersembunyi">
+<div id="peringatanBaterai" class="peringatan merah tersembunyi">
   <b>Baterai gelang hampir habis</b>
-  Isi daya lewat lubang USB-C charger supaya alarm besok tetap berbunyi.
+  <span id="teksPeringatan"></span>
 </div>
 
-<!-- ================= HALAMAN BERANDA ================= -->
-<main id="hBeranda">
-  <section class="kartu sambung" id="kartuSambung">
-    <h3>Gelang belum tersambung</h3>
-    <p>Pastikan saklar gelang ON dan Bluetooth HP menyala.</p>
-    <button id="tblSambung" class="utama lebar">Sambungkan</button>
-  </section>
-  <section class="kartu tersembunyi" id="kartuTersambung">
-    <div class="ringkasKoneksi"><div><b id="namaAlat">TWA</b><br><span>Jam gelang <b id="jamEsp">--:--</b></span></div><button id="tblPutus" disabled>Putuskan</button></div>
-  </section>
+<!-- ===== HALAMAN 1: BERANDA ===== -->
+<section id="hal-beranda" class="hal">
+  <header>
+    <h1>TWA <small>Gelang alarm dingin</small></h1>
+    <span class="pil">Belum tersambung</span>
+  </header>
 
-  <section class="kartu">
-    <h2>Alarm berikutnya</h2>
-    <div class="alarmUtama">
-      <div><div class="jam" id="jamAlarm">--:--</div><div class="sisa" id="sisaAlarm">Belum diatur</div></div>
-      <label class="saklar"><input type="checkbox" id="saklarAlarm" disabled><span></span></label>
+  <div class="kartu">
+    <div id="blmSambung"><button id="tblSambung" class="utama lebar besar">Sambungkan</button></div>
+    <div id="sdhSambung" class="tersembunyi">
+      <div class="baris" style="align-items:flex-start;margin-bottom:12px">
+        <div><span class="redup">Perangkat</span><b id="namaPerangkat">TWA</b></div>
+        <div><span class="redup">Jam di gelang</span><b id="jamEsp">belum diatur</b></div>
+      </div>
+      <button id="tblPutus" class="lebar" disabled>Putuskan</button>
     </div>
-  </section>
-
-  <div class="grid2">
-    <section class="kartu">
-      <h2>Baterai</h2>
-      <div class="cincin">
-        <svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="46" fill="none" stroke="var(--garis)" stroke-width="11"/>
-          <circle id="busurBat" cx="56" cy="56" r="46" fill="none" stroke="var(--ok)" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 999"/></svg>
-        <div class="isi"><b id="persenBat">--</b><small id="voltBat">-- V</small></div>
-      </div>
-      <div class="keterangan" id="ketBat">Belum ada data</div>
-    </section>
-    <section class="kartu">
-      <h2>Suhu</h2>
-      <div class="cincin">
-        <svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="46" fill="none" stroke="var(--garis)" stroke-width="11"/>
-          <circle id="busurSuhu" cx="56" cy="56" r="46" fill="none" stroke="var(--dingin)" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 999"/></svg>
-        <div class="isi"><b id="nilaiSuhu">--</b><small id="lembap">lembap --</small></div>
-      </div>
-      <div class="keterangan" id="ketSuhu">Belum ada data</div>
-    </section>
+    <div class="info tersembunyi" id="infoKoneksi"></div>
   </div>
 
-  <section class="kartu">
+  <div class="kartu">
+    <h2>Alarm berikutnya</h2>
+    <div class="sebaris">
+      <div>
+        <div class="jamBesar" id="jamAlarm">--:--</div>
+        <div class="info" id="sisaAlarm" style="margin-top:2px">Belum ada data</div>
+      </div>
+      <label class="saklar" aria-label="Alarm nyala atau mati"><input type="checkbox" id="saklar" disabled><span></span></label>
+    </div>
+  </div>
+
+  <div class="dua">
+    <div class="kartu cincin">
+      <h2>Baterai</h2>
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="lat" cx="50" cy="50" r="40"/>
+        <circle class="isi" id="cincinBat" cx="50" cy="50" r="40" pathLength="100" stroke-dasharray="0 100" stroke-opacity="0"/>
+        <text id="teksBat" x="50" y="58" text-anchor="middle">--</text>
+      </svg>
+      <b id="voltBat">-- V</b>
+      <div class="ket" id="ketBat">Belum ada data</div>
+    </div>
+    <div class="kartu cincin">
+      <h2>Suhu</h2>
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="lat" cx="50" cy="50" r="40"/>
+        <circle class="isi" id="cincinSuhu" cx="50" cy="50" r="40" pathLength="100" stroke-dasharray="0 100" stroke-opacity="0"/>
+        <text id="teksSuhu" x="50" y="58" text-anchor="middle">--</text>
+      </svg>
+      <b id="lembap">Lembap -- %</b>
+      <div class="ket" id="labelSuhu">Belum ada data</div>
+    </div>
+  </div>
+
+  <div class="kartu">
     <h2>Uji alarm</h2>
     <div class="baris">
       <button id="tblUji" class="dingin besar" disabled>Mulai uji</button>
       <button id="tblStop" class="bahaya besar" disabled>Stop</button>
     </div>
     <div class="progres"><div id="batang"></div></div>
-    <div class="fase"><span id="teksDenyut">Siaga</span><b id="teksFase"></b></div>
-    <div><span class="chip" id="chipKipas">Kipas --</span></div>
-  </section>
-</main>
+    <div class="fase"><span id="teksDenyut">Belum berjalan</span><b id="teksFase"></b></div>
+    <div class="info" id="teksKipas">Kipas --</div>
+  </div>
+</section>
 
-<!-- ================= HALAMAN PENGATURAN ALARM ================= -->
-<main id="hAlarm" class="tersembunyi">
-  <div class="judulHal">Pengaturan Alarm</div>
-  <section class="kartu">
+<!-- ===== HALAMAN 2: PENGATURAN ALARM ===== -->
+<section id="hal-pengaturan" class="hal tersembunyi">
+  <header><h1>Pengaturan Alarm</h1><span class="pil">Belum tersambung</span></header>
+
+  <div class="kartu">
     <h2>Jam alarm</h2>
-    <div class="pilihJam">
-      <select id="inputJam" aria-label="Jam"></select><span>:</span><select id="inputMenit" aria-label="Menit"></select>
+    <div class="jamPil">
+      <select id="pilJam" aria-label="Jam"></select><span>:</span><select id="pilMenit" aria-label="Menit"></select>
     </div>
     <div class="baris" style="margin-top:12px">
       <button id="tblSimpanAlarm" class="utama" disabled>Simpan alarm</button>
       <button id="tblMatikanAlarm" disabled>Matikan</button>
     </div>
-  </section>
-  <section class="kartu">
+    <div class="info">Alarm berbunyi setiap hari pada jam ini.</div>
+  </div>
+
+  <div class="kartu">
     <h2>Pola alarm</h2>
-    <div class="pola">
+    <div class="tiga pola">
       <div><label for="pNyala">Dingin (detik)</label><input type="number" id="pNyala" min="1" max="30" value="10" inputmode="numeric"></div>
       <div><label for="pJeda">Jeda (detik)</label><input type="number" id="pJeda" min="1" max="120" value="15" inputmode="numeric"></div>
       <div><label for="pJumlah">Berapa kali</label><input type="number" id="pJumlah" min="1" max="30" value="3" inputmode="numeric"></div>
     </div>
-    <button id="tblPola" class="lebar" style="margin-top:10px" disabled>Simpan pola</button>
-    <div class="info" id="infoPola">Satu kali alarm sekitar 1 menit.</div>
-  </section>
-  <section class="kartu">
-    <h2>Mode kipas pendingin</h2>
-    <div class="segmen">
+    <button id="tblPola" class="lebar" style="margin-top:12px" disabled>Simpan pola</button>
+    <div class="info" id="infoPola"></div>
+  </div>
+
+  <div class="kartu">
+    <h2>Kipas pendingin</h2>
+    <div class="tiga">
       <button id="kAuto" disabled>Otomatis</button>
       <button id="kOn" disabled>Nyala</button>
       <button id="kOff" disabled>Mati</button>
     </div>
-    <div class="info">Otomatis berarti kipas menyala selama alarm berjalan dan 1 menit sesudahnya.</div>
-  </section>
-</main>
+    <div class="info">Otomatis: kipas menyala saat alarm dan 1 menit sesudahnya. Pilihan Nyala dan Mati hanya untuk mencoba.</div>
+  </div>
+</section>
 
-<!-- ================= HALAMAN DATA ================= -->
-<main id="hData" class="tersembunyi">
-  <div class="judulHal">Data</div>
-  <section class="kartu">
+<!-- ===== HALAMAN 3: DATA ===== -->
+<section id="hal-data" class="hal tersembunyi">
+  <header><h1>Data</h1><span class="pil">Belum tersambung</span></header>
+
+  <div class="kartu">
     <h2>Grafik suhu</h2>
-    <div class="rentang">
-      <button data-rentang="10">10 menit</button>
-      <button data-rentang="60">1 jam</button>
-      <button data-rentang="0">Semua</button>
+    <div class="tiga" id="rentang">
+      <button data-r="10" class="pilih">10 menit</button>
+      <button data-r="60">1 jam</button>
+      <button data-r="semua">Semua</button>
     </div>
     <canvas id="grafik" aria-label="Grafik suhu"></canvas>
-    <div class="angka3">
-      <div><span class="kecil">Terendah</span><b id="gMin">--</b></div>
-      <div><span class="kecil">Rata rata</span><b id="gRata">--</b></div>
-      <div><span class="kecil">Tertinggi</span><b id="gMax">--</b></div>
+    <div class="tiga">
+      <div class="stat"><span class="redup">Terendah</span><b id="stMin">--</b></div>
+      <div class="stat"><span class="redup">Rata-rata</span><b id="stRata">--</b></div>
+      <div class="stat"><span class="redup">Tertinggi</span><b id="stMaks">--</b></div>
     </div>
+    <div class="info" id="infoData"></div>
     <div class="baris" style="margin-top:12px">
-      <button id="tblCsv">Unduh CSV</button>
+      <button id="tblCsv" class="utama">Unduh CSV</button>
       <button id="tblHapus">Hapus data</button>
     </div>
-    <div class="info" id="infoData">Belum ada data.</div>
-  </section>
-  <section class="kartu">
-    <details id="lipatLog">
+  </div>
+
+  <div class="kartu">
+    <details>
       <summary>Catatan dan perintah manual</summary>
       <div class="log" id="log"></div>
       <div class="baris" style="margin-top:8px">
-        <input type="text" id="inputManual" placeholder="contoh STATUS" autocapitalize="characters" style="font-size:16px">
+        <input type="text" id="inputManual" placeholder="contoh STATUS" autocapitalize="characters" style="font-size:16px;text-align:left" disabled>
         <button id="tblManual" style="flex:0 0 auto" disabled>Kirim</button>
       </div>
     </details>
-  </section>
-</main>
+  </div>
+</section>
 
 </div>
 
-<nav><div>
-  <button data-hal="hBeranda" class="aktif"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Beranda</button>
-  <button data-hal="hAlarm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Pengaturan</button>
-  <button data-hal="hData"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>Data</button>
+<nav id="menu"><div>
+  <button data-hal="beranda" class="aktif"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg><span>Beranda</span></button>
+  <button data-hal="pengaturan"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Pengaturan</span></button>
+  <button data-hal="data"><svg viewBox="0 0 24 24"><path d="M4 4v16h16"/><path d="M8 15l4-5 3 3 5-7"/></svg><span>Data</span></button>
 </div></nav>
 <div id="toast" role="status"></div>
 
 <script>
 "use strict";
-/* ================= 2. PENGATURAN =================
-   UUID harus sama dengan kode ESP (TWA.ino). */
-const UUID_LAYANAN = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";   // layanan Nordic UART
+/* =========================================================
+   1. Pengaturan. Nilai yang mungkin perlu diubah ada di sini.
+   ========================================================= */
+const UUID_LAYANAN = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";   // Nordic UART
 const UUID_RX      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";   // HP menulis ke ESP
 const UUID_TX      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";   // ESP mengirim ke HP
-const AWALAN_NAMA  = "TWA";       // nama gelang harus diawali TWA
-const JEDA_PERINTAH_MS = 600;     // jarak antar perintah supaya ESP sempat memproses satu per satu
-const BATAS_LEMAH = 15;           // persen baterai untuk peringatan
-const MAKS_DATA = 6000;           // jumlah baris data yang disimpan di HP
-const SINKRON_JAM_MS = 30*60000;  // jam gelang disamakan lagi dengan HP tiap 30 menit selama tersambung
-const POLA_AWAL = {nyala:10, jeda:15, jumlah:3};   // pola bawaan, sama dengan kode ESP
+const AWALAN_NAMA  = "TWA";                  // nama alat diawali TWA
+const JEDA_PERINTAH_MS = 600;                // jarak antar perintah
+const MAKS_HURUF   = 19;                     // panjang perintah paling banyak
+const TUNGGU_SAPAAN_MS = 1500;               // tunggu sapaan alat sebelum kirim perintah awal
+const SINKRON_JAM_MS = 30*60*1000;           // jam disamakan ulang tiap 30 menit
+const MAKS_BARIS   = 6000;                   // data suhu paling banyak yang disimpan
+const SIMPAN_DATA_MS = 10000;                // jeda menyimpan data ke penyimpanan HP
+const BATAS_HIJAU = 40, BATAS_MERAH = 15, BATAS_PENUH = 80;   // persen baterai
+const SUHU_CINCIN_MAKS = 50;                 // suhu penuh pada cincin (derajat)
+const BATAS_DINGIN = 25, BATAS_HANGAT = 35;  // batas label suhu (derajat)
+const POLA_AWAL = {nyala:10, jeda:15, jumlah:3};
+const RENTANG_MS = {"10":10*60*1000, "60":60*60*1000, "semua":Infinity};
 
-/* ================= 3. KEADAAN APLIKASI ================= */
+/* =========================================================
+   2. Keadaan aplikasi
+   ========================================================= */
 const S = {
-  tersambung:false, perangkat:null, rx:null, antrean:[], sibuk:false, sisa:"",
-  data:[],                                  // {t, v suhu, h lembap, k kipas, b volt, p persen}
-  pola:{...POLA_AWAL}, dingin:false, denyut:0, total:3, tFase:0,
-  lembap:null, kipas:null, volt:null, persen:null, alarm:null, rentang:10,
+  tersambung:false, menyambung:false, perangkat:null, rx:null,
+  antrean:[], sibuk:false, sisa:"",
+  hal:"beranda", jamDet:null, jamT:0, hJam:null,
+  alarm:null, alarmAktif:null,
+  pola:{...POLA_AWAL},
+  dingin:false, denyut:0, total:POLA_AWAL.jumlah, tFase:0,
+  suhu:null, lembap:null, kipas:null, modeKipas:null, volt:null, persen:null,
+  data:[], kotor:false, rentang:"10"
 };
 const $ = id => document.getElementById(id);
 const dua = n => String(n).padStart(2,"0");
-function jamSekarang(detik){ const d=new Date(); return dua(d.getHours())+":"+dua(d.getMinutes())+(detik?":"+dua(d.getSeconds()):""); }
-function toast(t){ const e=$("toast"); e.textContent=t; e.classList.add("tampil"); clearTimeout(toast.h); toast.h=setTimeout(()=>e.classList.remove("tampil"),2600); }
-function catat(t,jenis){
+
+/* =========================================================
+   3. Menu bawah dan bantuan kecil
+   ========================================================= */
+function bukaHalaman(nama){
+  S.hal = nama;
+  document.querySelectorAll(".hal").forEach(h=>h.classList.toggle("tersembunyi", h.id!=="hal-"+nama));
+  document.querySelectorAll("#menu button").forEach(b=>b.classList.toggle("aktif", b.dataset.hal===nama));
+  window.scrollTo(0,0);
+  if(nama==="data") perbaruiData();
+}
+function toast(teks){
+  const t=$("toast"); t.textContent=teks; t.classList.add("tampil");
+  clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("tampil"),2600);
+}
+function catat(teks, jenis){
   const log=$("log"), d=document.createElement("div");
   if(jenis) d.className=jenis;
-  d.textContent=new Date().toLocaleTimeString("id-ID",{hour12:false})+"  "+(jenis==="k"?"> ":"")+t;
-  log.appendChild(d); while(log.childNodes.length>300) log.removeChild(log.firstChild); log.scrollTop=log.scrollHeight;
+  d.textContent=new Date().toLocaleTimeString("id-ID",{hour12:false})+"  "+(jenis==="k"?"> ":"")+teks;
+  log.appendChild(d);
+  while(log.childNodes.length>300) log.removeChild(log.firstChild);
+  log.scrollTop=log.scrollHeight;
 }
-function simpanLokal(k,v){ try{ localStorage.setItem("twa_"+k, typeof v==="string"?v:JSON.stringify(v)); }catch(e){} }
+function jamSekarang(denganDetik){
+  const d=new Date();
+  return dua(d.getHours())+":"+dua(d.getMinutes())+(denganDetik?":"+dua(d.getSeconds()):"");
+}
+function lamaPola(p){
+  const det=p.jumlah*p.nyala+(p.jumlah-1)*p.jeda, m=Math.floor(det/60), s=det%60;
+  return (m? m+" menit":"")+(m&&s?" ":"")+(s? s+" detik":"");
+}
+function simpanLokal(k,v){ try{ localStorage.setItem("twa_"+k,v); }catch(e){} }
 function ambilLokal(k){ try{ return localStorage.getItem("twa_"+k); }catch(e){ return null; } }
-
-/* ================= 4. MENU BAWAH ================= */
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll("main").forEach(m=>m.classList.toggle("tersembunyi",m.id!==b.dataset.hal));
-  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("aktif",x===b));
-  if(b.dataset.hal==="hData") gambarGrafik();
-  window.scrollTo(0,0);
-});
-
-/* ================= 5. TOMBOL AKTIF ATAU TIDAK ================= */
 function aturTombol(){
   const on=S.tersambung;
-  ["tblPutus","tblUji","tblStop","tblSimpanAlarm","tblMatikanAlarm","tblPola","tblManual","kAuto","kOn","kOff","saklarAlarm"]
+  ["tblPutus","tblUji","tblStop","tblSimpanAlarm","tblMatikanAlarm","tblPola","tblManual","inputManual","saklar","kAuto","kOn","kOff"]
     .forEach(id=>$(id).disabled=!on);
-  $("kartuSambung").classList.toggle("tersembunyi",on);
-  $("kartuTersambung").classList.toggle("tersembunyi",!on);
-  $("tblSambung").textContent = S.perangkat ? "Sambungkan lagi" : "Sambungkan";
-  $("pil").className="pil"+(on?" on":"");
-  $("pil").textContent = on ? "Tersambung" : "Tidak tersambung";
+  $("blmSambung").classList.toggle("tersembunyi",on);
+  $("sdhSambung").classList.toggle("tersembunyi",!on);
+  $("tblSambung").disabled=S.menyambung;
+  $("tblSambung").textContent=S.menyambung?"Menyambung...":(S.perangkat?"Sambungkan ulang":"Sambungkan");
+  document.querySelectorAll(".pil").forEach(p=>{
+    p.className="pil"+(on?" on":""); p.textContent=on?"Tersambung":"Belum tersambung";
+  });
+}
+function infoKoneksi(teks){
+  const e=$("infoKoneksi"); e.textContent=teks; e.classList.toggle("tersembunyi",!teks);
 }
 
-/* ================= 6. MENGIRIM PERINTAH =================
-   Perintah masuk antrean lalu dikirim satu per satu, karena ESP memproses satu perintah dalam satu waktu. */
+/* =========================================================
+   4. Mengirim perintah. Masuk antrean, dikirim satu per satu
+      dengan jeda supaya gelang sempat memprosesnya.
+   ========================================================= */
 function kirimPerintah(cmd){
-  if(!S.tersambung){ toast("Gelang belum tersambung"); return; }
-  if(cmd.length>19){ toast("Perintah terlalu panjang"); return; }
-  S.antrean.push(cmd); if(!S.sibuk) prosesAntrean();
+  if(!S.tersambung){ toast("Belum tersambung ke gelang"); return; }
+  if(cmd.length>MAKS_HURUF){ toast("Perintah terlalu panjang, maksimal "+MAKS_HURUF+" huruf"); return; }
+  S.antrean.push(cmd);
+  if(!S.sibuk) prosesAntrean();
 }
 async function prosesAntrean(){
   S.sibuk=true;
   while(S.antrean.length && S.tersambung){
-    const cmd=S.antrean.shift(); catat(cmd,"k");
+    const cmd=S.antrean.shift();
+    catat(cmd,"k");
     try{
       const data=new TextEncoder().encode(cmd+"\n");
-      if(S.rx.properties && S.rx.properties.writeWithoutResponse && S.rx.writeValueWithoutResponse) await S.rx.writeValueWithoutResponse(data);
+      if(S.rx.properties && S.rx.properties.writeWithoutResponse && S.rx.writeValueWithoutResponse)
+        await S.rx.writeValueWithoutResponse(data);
       else await S.rx.writeValue(data);
     }catch(e){ catat("Gagal mengirim "+cmd+" ("+e.message+")","s"); }
     await new Promise(r=>setTimeout(r,JEDA_PERINTAH_MS));
@@ -351,115 +367,178 @@ async function prosesAntrean(){
   S.sibuk=false;
 }
 
-/* ================= 7. MENERIMA BALASAN =================
-   ESP mengirim potongan 20 huruf, disambung dulu sampai ketemu ganti baris, lalu tiap baris dibaca. */
+/* =========================================================
+   5. Menerima balasan. Gelang mengirim potongan 20 huruf,
+      disambung dulu sampai ketemu ganti baris.
+   ========================================================= */
 const pengurai=new TextDecoder();
 function terimaPotongan(teks){
-  S.sisa+=teks; const baris=S.sisa.split(/\r?\n/); S.sisa=baris.pop();
+  S.sisa+=teks;
+  const baris=S.sisa.split(/\r?\n/);
+  S.sisa=baris.pop();
   baris.forEach(b=>{ b=b.trim(); if(b) olahBaris(b); });
 }
 function olahBaris(b){
-  catat(b); let m;
-  if((m=b.match(/^Suhu (-?\d+(?:\.\d+)?) C$/)))          return tampilSuhu(parseFloat(m[1]));
-  if(b==="Suhu sensor error")                              return tampilSuhu(null);
-  if((m=b.match(/^Lembap (\d+) %$/)))                     { S.lembap=+m[1]; $("lembap").textContent="lembap "+m[1]+" %"; lengkapiBaris({h:S.lembap}); return; }
-  if(b==="Lembap sensor error")                            { S.lembap=null; $("lembap").textContent="lembap --"; return; }
-  if((m=b.match(/^Baterai (\d+(?:\.\d+)?) V (\d+) %$/)))  return tampilBaterai(parseFloat(m[1]),+m[2]);
-  if((m=b.match(/^Kipas (ON|OFF)$/)))                      return tampilKipas(m[1]==="ON");
-  if((m=b.match(/^Mode kipas (AUTO|ON|OFF)$/)))            return tampilModeKipas(m[1]);
-  if((m=b.match(/^Jam (?:diatur )?(\d\d:\d\d)(?::\d\d)?$/))) { $("jamEsp").textContent=m[1]; return; }
-  if(/^Jam belum diatur/.test(b))                          { $("jamEsp").textContent="--:--"; return; }
-  if((m=b.match(/^Alarm (?:diatur )?(\d\d:\d\d)$/)))      { tampilAlarm(m[1]); if(/diatur/.test(b)) toast("Alarm disimpan "+m[1]); return; }
-  if(b==="Alarm mati"||b==="Alarm dimatikan")              { tampilAlarm(null); if(b==="Alarm dimatikan") toast("Alarm dimatikan"); return; }
-  if((m=b.match(/Pola (\d+)s nyala, (\d+)s jeda, (\d+)x/))) {
-    S.pola={nyala:+m[1],jeda:+m[2],jumlah:+m[3]}; $("pNyala").value=m[1]; $("pJeda").value=m[2]; $("pJumlah").value=m[3];
-    infoPola(); if(!S.dingin) S.total=S.pola.jumlah; if(/^Diubah/.test(b)) toast("Pola disimpan"); return; }
-  if((m=b.match(/[Dd]enyut (\d+) dari (\d+)/)))           { mulaiFase(+m[1],+m[2]); if(/^ALARM/.test(b)) toast("Alarm berbunyi"); return; }
-  if((m=b.match(/^Sedang dingin, denyut (\d+)/)))          { mulaiFase(+m[1],S.pola.jumlah); return; }
-  if(b==="Siaga"||b==="Tidak ada alarm berjalan")          { selesaiDingin(); return; }
-  if(/^(Alarm selesai|Alarm dihentikan|Dihentikan dengan tombol)$/.test(b)) { selesaiDingin(); toast(b); return; }
-  if(/^Berhenti, sisi kulit terlalu panas/.test(b))         { selesaiDingin(); toast("Dihentikan karena kulit terlalu hangat. Periksa gelang."); return; }
-  if(/^(Format salah|Perintah tidak dikenal|Pola dingin sedang berjalan)/.test(b)) toast(b);
+  catat(b);
+  let m;
+  if((m=b.match(/^Suhu (-?\d+(?:\.\d+)?) C$/)))      { S.suhu=parseFloat(m[1]); return tampilSuhu(); }
+  if(b==="Suhu sensor error")                          { S.suhu=null; return tampilSuhu(); }
+  if((m=b.match(/^Lembap (\d+) %$/)))                 { S.lembap=+m[1]; tampilSuhu(); if(S.suhu!==null) tambahData(); return; }
+  if(b==="Lembap sensor error")                        { S.lembap=null; return tampilSuhu(); }
+  if((m=b.match(/^Baterai (\d+(?:\.\d+)?) V (\d+) %$/))) return tampilBaterai(parseFloat(m[1]),+m[2]);
+  if((m=b.match(/^Kipas (ON|OFF)$/)))                  return tampilKipas(m[1]==="ON");
+  if((m=b.match(/^Mode kipas (AUTO|ON|OFF)$/)))        return tampilModeKipas(m[1]);
+  if((m=b.match(/^Jam (?:diatur )?(\d\d):(\d\d):(\d\d)$/))) { S.jamDet=+m[1]*3600+m[2]*60+ +m[3]; S.jamT=Date.now(); return tampilJamEsp(); }
+  if(/^Jam belum diatur/.test(b))                      { S.jamDet=null; return tampilJamEsp(); }
+  if((m=b.match(/^Alarm (diatur )?(\d\d:\d\d)$/))) {
+    S.alarm=m[2]; S.alarmAktif=true; isiPilihanJam(m[2]); simpanAlarm(); tampilAlarm();
+    if(m[1]) toast("Alarm disimpan"); return; }
+  if(b==="Alarm mati"||b==="Alarm dimatikan") {
+    S.alarmAktif=false; simpanAlarm(); tampilAlarm();
+    if(b==="Alarm dimatikan") toast("Alarm dimatikan"); return; }
+  if((m=b.match(/^(Diubah, )?Pola (\d+)s nyala, (\d+)s jeda, (\d+)x$/))) {
+    S.pola={nyala:+m[2],jeda:+m[3],jumlah:+m[4]};
+    $("pNyala").value=m[2]; $("pJeda").value=m[3]; $("pJumlah").value=m[4]; infoPola();
+    if(!S.dingin) S.total=S.pola.jumlah;
+    if(m[1]) toast("Pola disimpan"); return; }
+  if((m=b.match(/^(ALARM dingin|Uji alarm), denyut (\d+) dari (\d+)$/))) {
+    mulaiFase(+m[2],+m[3]); if(m[1]==="ALARM dingin") toast("Alarm berbunyi"); return; }
+  if((m=b.match(/^Denyut (\d+) dari (\d+)$/)))        return mulaiFase(+m[1],+m[2]);
+  if((m=b.match(/^Sedang dingin, denyut (\d+)$/)))    return mulaiFase(+m[1],S.pola.jumlah);
+  if(b==="Siaga"||b==="Tidak ada alarm berjalan")     return selesaiDingin();
+  if(b==="Alarm selesai")                              { selesaiDingin(); return toast("Alarm selesai"); }
+  if(b==="Alarm dihentikan"||b==="Dihentikan dengan tombol") { selesaiDingin(); return toast("Dihentikan"); }
+  if(/^Berhenti, sisi kulit terlalu panas/.test(b))   { selesaiDingin(); return toast("Alarm berhenti karena sisi kulit terlalu panas"); }
+  if(/^Berhenti, suhu terlalu dingin/.test(b))        { selesaiDingin(); return toast("Alarm berhenti karena terlalu dingin"); }
+  if(/^(Format salah|Perintah tidak dikenal)/.test(b)) return toast("Perintah salah: "+b);
+  if(b==="Pola dingin sedang berjalan")                return toast("Alarm sedang berjalan");
 }
 
-/* ================= 8. TAMPILAN NILAI ================= */
-function cincin(id,frac,warna){
-  const keliling=2*Math.PI*46, e=$(id);
-  e.setAttribute("stroke-dasharray",(keliling*Math.max(0,Math.min(1,frac))).toFixed(1)+" 999");
-  if(warna) e.setAttribute("stroke",warna);
+/* =========================================================
+   6. Tampilan
+   ========================================================= */
+function isiCincin(id,frac,warna){
+  const c=$(id); frac=Math.max(0,Math.min(1,frac));
+  c.setAttribute("stroke-dasharray",(frac*100).toFixed(1)+" 100");
+  c.setAttribute("stroke-opacity",frac>0?"1":"0");
+  c.setAttribute("stroke",warna);
 }
 function tampilBaterai(v,p){
   S.volt=v; S.persen=p;
-  $("persenBat").textContent=p+"%"; $("voltBat").textContent=v.toFixed(2)+" V";
-  const warna = p<BATAS_LEMAH?"var(--bahaya)":p<40?"var(--waspada)":"var(--ok)";
-  cincin("busurBat",p/100,warna);
-  $("ketBat").textContent = p>=90?"Penuh":p>=40?"Cukup":p>=BATAS_LEMAH?"Isi daya malam ini":"Segera isi daya";
-  $("bateraiLemah").classList.toggle("tersembunyi",p>=BATAS_LEMAH);
-  tambahData({b:v,p});
+  const warna=p>=BATAS_HIJAU?"var(--ok)":p>=BATAS_MERAH?"var(--peringatan)":"var(--bahaya)";
+  const ket=p>=BATAS_PENUH?"Penuh":p>=BATAS_HIJAU?"Cukup":p>=BATAS_MERAH?"Isi daya malam ini":"Segera isi daya";
+  isiCincin("cincinBat",p/100,warna);
+  $("teksBat").textContent=p+"%"; $("voltBat").textContent=v.toFixed(2)+" V"; $("ketBat").textContent=ket;
+  $("peringatanBaterai").classList.toggle("tersembunyi",p>=BATAS_MERAH);
+  $("teksPeringatan").textContent="Tinggal "+p+" %. Isi daya sekarang supaya alarm tetap berbunyi.";
 }
-function tampilSuhu(v){
-  if(v===null){ $("nilaiSuhu").textContent="--"; $("ketSuhu").textContent="Sensor tidak terbaca"; cincin("busurSuhu",0); return; }
-  let warna="var(--dingin)", ket="Dingin";
-  if(v<18) ket="Sangat dingin"; else if(v<25) ket="Dingin";
-  else if(v<35){ ket="Normal"; warna="var(--ok)"; } else if(v<42){ ket="Hangat"; warna="var(--waspada)"; }
-  else { ket="Terlalu hangat"; warna="var(--bahaya)"; }
-  $("nilaiSuhu").textContent=v.toFixed(1)+"°"; $("ketSuhu").textContent=ket;
-  cincin("busurSuhu",v/50,warna);
-  tambahData({v});
+function tampilSuhu(){
+  if(S.suhu===null){
+    $("teksSuhu").textContent="--"; $("labelSuhu").textContent="Sensor bermasalah";
+    $("cincinSuhu").setAttribute("stroke-opacity","0");
+  }else{
+    const v=S.suhu;
+    const warna=v<BATAS_DINGIN?"var(--dingin)":v<BATAS_HANGAT?"var(--ok)":"var(--peringatan)";
+    isiCincin("cincinSuhu",v/SUHU_CINCIN_MAKS,warna);
+    $("teksSuhu").textContent=v.toFixed(1)+"°";
+    $("labelSuhu").textContent=v<BATAS_DINGIN?"Dingin":v<BATAS_HANGAT?"Normal":"Hangat";
+  }
+  $("lembap").textContent="Lembap "+(S.lembap===null?"--":S.lembap)+" %";
 }
-function tampilKipas(on){ S.kipas=on; lengkapiBaris({k:on}); const c=$("chipKipas"); c.textContent="Kipas "+(on?"menyala":"mati"); c.className="chip"+(on?" on":""); }
-function tampilModeKipas(m){ [["kAuto","AUTO"],["kOn","ON"],["kOff","OFF"]].forEach(([id,v])=>$(id).classList.toggle("pilih",v===m)); }
-function tampilAlarm(j){
-  S.alarm=j; $("saklarAlarm").checked=!!j; $("jamAlarm").textContent=j||"--:--";
-  if(j){ aturPilihJam(j); simpanLokal("alarm",j); }
-  sisaAlarm();
+function tampilKipas(on){
+  S.kipas=on; $("teksKipas").textContent="Kipas "+(on?"menyala":"mati");
 }
-function sisaAlarm(){
-  if(!S.alarm){ $("sisaAlarm").textContent=S.tersambung?"Alarm mati":"Belum diatur"; return; }
-  const [h,m]=S.alarm.split(":").map(Number), d=new Date(), a=new Date(d);
-  a.setHours(h,m,0,0); if(a<=d) a.setDate(a.getDate()+1);
-  const menit=Math.round((a-d)/60000), jj=Math.floor(menit/60), mm=menit%60;
-  $("sisaAlarm").textContent="Berbunyi dalam "+(jj?jj+" jam ":"")+mm+" menit";
+function tampilModeKipas(m){
+  S.modeKipas=m;
+  [["kAuto","AUTO"],["kOn","ON"],["kOff","OFF"]].forEach(([id,v])=>$(id).classList.toggle("pilih",v===m));
 }
-setInterval(sisaAlarm,30000);
+function tampilJamEsp(){
+  if(S.jamDet===null){ $("jamEsp").textContent="belum diatur"; return; }
+  const d=(S.jamDet+Math.floor((Date.now()-S.jamT)/1000))%86400;
+  $("jamEsp").textContent=dua(Math.floor(d/3600))+":"+dua(Math.floor(d/60)%60)+":"+dua(d%60);
+}
+function simpanAlarm(){ simpanLokal("alarm",JSON.stringify({j:S.alarm,a:S.alarmAktif})); }
+function tampilAlarm(){
+  $("jamAlarm").textContent=S.alarm||"--:--";
+  $("saklar").checked=S.alarmAktif===true;
+  let t="Belum ada data";
+  if(S.alarmAktif===false) t="Alarm mati";
+  else if(S.alarmAktif && S.alarm){
+    const [h,m]=S.alarm.split(":").map(Number), n=new Date();
+    let d=h*3600+m*60-(n.getHours()*3600+n.getMinutes()*60+n.getSeconds());
+    if(d<=0) d+=86400;
+    const mnt=Math.ceil(d/60), jam=Math.floor(mnt/60), men=mnt%60;
+    t="Berbunyi dalam "+(jam?jam+" jam":"")+(jam&&men?" ":"")+(men?men+" menit":"");
+  }
+  $("sisaAlarm").textContent=t;
+}
+function infoPola(){
+  const p=bacaPola();
+  $("infoPola").textContent=p?"Satu kali alarm sekitar "+lamaPola(p):"Dingin 1 sampai 30, jeda 1 sampai 120, berapa kali 1 sampai 30.";
+}
+function mulaiFase(n,total){ S.dingin=true; S.denyut=n; S.total=total; S.tFase=Date.now(); perbaruiFase(); }
+function selesaiDingin(){
+  S.dingin=false; S.denyut=0;
+  $("batang").style.width="0"; $("teksDenyut").textContent="Belum berjalan"; $("teksFase").textContent="";
+}
+function perbaruiFase(){
+  if(!S.dingin) return;
+  const lewat=(Date.now()-S.tFase)/1000, p=S.pola, nyala=lewat<p.nyala;
+  const sisa=nyala?p.nyala-lewat:p.nyala+p.jeda-lewat;
+  $("teksDenyut").textContent="Denyut "+S.denyut+" dari "+S.total;
+  $("teksFase").textContent=(nyala?"Peltier nyala ":"Jeda ")+Math.max(0,Math.ceil(sisa))+" s";
+  const maju=((S.denyut-1)*(p.nyala+p.jeda)+Math.min(lewat,p.nyala+p.jeda))/(S.total*p.nyala+(S.total-1)*p.jeda);
+  $("batang").style.width=Math.min(100,maju*100).toFixed(1)+"%";
+}
+function isiPilihanJam(v){
+  const [j,m]=v.split(":"); $("pilJam").value=j; $("pilMenit").value=m;
+}
 
-/* ================= 9. DATA, GRAFIK, CSV ================= */
-function tambahData(isi){
-  const now=Date.now(), akhir=S.data[S.data.length-1];
-  if(akhir && now-akhir.t<1500) Object.assign(akhir,isi);        // nilai yang datang bersamaan digabung satu baris
-  else S.data.push(Object.assign({t:now,v:null,h:S.lembap,k:S.kipas,b:S.volt,p:S.persen},isi));
-  if(S.data.length>MAKS_DATA) S.data.shift();
-  simpanData(); gambarGrafik();
+/* =========================================================
+   7. Data suhu: disimpan di HP, grafik, dan unduh CSV
+   ========================================================= */
+function muatData(){
+  try{ const d=JSON.parse(ambilLokal("data")||"[]"); if(Array.isArray(d)) S.data=d.slice(-MAKS_BARIS); }catch(e){}
 }
-function lengkapiBaris(isi){                                   // lengkapi baris data terakhir tanpa membuat baris baru
-  const a=S.data[S.data.length-1]; if(a && Date.now()-a.t<1500) Object.assign(a,isi);
+function simpanData(){ if(S.kotor){ S.kotor=false; simpanLokal("data",JSON.stringify(S.data)); } }
+function tambahData(){
+  S.data.push({t:Date.now(),s:S.suhu,h:S.lembap,k:S.kipas,v:S.volt,p:S.persen});
+  if(S.data.length>MAKS_BARIS) S.data.splice(0,S.data.length-MAKS_BARIS);
+  S.kotor=true;
+  if(S.hal==="data") perbaruiData();
 }
-function simpanData(){ clearTimeout(simpanData.h); simpanData.h=setTimeout(()=>simpanLokal("data",S.data),2000); }
-function gambarGrafik(){
-  const c=$("grafik"); if(!c.clientWidth) return;
-  const r=window.devicePixelRatio||1, W=c.clientWidth, H=c.clientHeight;
+function dataRentang(){
+  const batas=Date.now()-RENTANG_MS[S.rentang];
+  return S.data.filter(p=>p.t>=batas);
+}
+function perbaruiData(){
+  const d=dataRentang(), s=d.map(p=>p.s);
+  $("stMin").textContent=s.length?Math.min(...s).toFixed(1)+"°":"--";
+  $("stMaks").textContent=s.length?Math.max(...s).toFixed(1)+"°":"--";
+  $("stRata").textContent=s.length?(s.reduce((a,b)=>a+b,0)/s.length).toFixed(1)+"°":"--";
+  $("infoData").textContent=S.data.length+" data tersimpan di HP ini.";
+  gambarGrafik(d);
+}
+function gambarGrafik(d){
+  const c=$("grafik"), r=window.devicePixelRatio||1, W=c.clientWidth, H=c.clientHeight;
+  if(W<10) return;
   c.width=W*r; c.height=H*r;
   const g=c.getContext("2d"); g.setTransform(r,0,0,r,0,0); g.clearRect(0,0,W,H);
-  const gaya=getComputedStyle(document.documentElement), redup=gaya.getPropertyValue("--redup").trim(),
-        garis=gaya.getPropertyValue("--garis").trim(), biru=gaya.getPropertyValue("--dingin").trim();
+  const gaya=getComputedStyle(document.documentElement);
+  const redup=gaya.getPropertyValue("--redup").trim(), garis=gaya.getPropertyValue("--garis").trim(), biru=gaya.getPropertyValue("--dingin").trim();
   g.font="11px system-ui"; g.fillStyle=redup;
-  const batas=S.rentang?Date.now()-S.rentang*60000:0;
-  const d=S.data.filter(p=>p.t>=batas && p.v!=null);
-  $("infoData").textContent=S.data.length?S.data.length+" baris data tersimpan di HP ini.":"Belum ada data.";
-  ["gMin","gRata","gMax"].forEach(id=>$(id).textContent="--");
-  if(d.length<2){ g.fillText("Grafik muncul setelah ada 2 data suhu",12,H/2); return; }
-  const vs=d.map(p=>p.v); let mn=Math.min(...vs), mx=Math.max(...vs);
-  $("gMin").textContent=mn.toFixed(1)+"°"; $("gMax").textContent=mx.toFixed(1)+"°";
-  $("gRata").textContent=(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(1)+"°";
+  d=d||dataRentang();
+  if(d.length<2){ g.fillText("Grafik muncul setelah ada 2 data suhu",10,H/2); return; }
+  let mn=Math.min(...d.map(p=>p.s)), mx=Math.max(...d.map(p=>p.s));
   if(mx-mn<2){ const t=(mx+mn)/2; mn=t-1; mx=t+1; }
-  const ki=34, ka=8, at=10, ba=20, t0=d[0].t, t1=d[d.length-1].t;
-  const x=t=>ki+(t-t0)/(t1-t0||1)*(W-ki-ka), y=v=>at+(mx-v)/(mx-mn)*(H-at-ba);
+  const kiri=34, kanan=8, atas=10, bawah=20, t0=d[0].t, t1=d[d.length-1].t;
+  const x=t=>kiri+(t-t0)/(t1-t0||1)*(W-kiri-kanan), y=v=>atas+(mx-v)/(mx-mn)*(H-atas-bawah);
   g.strokeStyle=garis; g.lineWidth=1;
-  [mn,(mn+mx)/2,mx].forEach(v=>{ g.beginPath(); g.moveTo(ki,y(v)); g.lineTo(W-ka,y(v)); g.stroke(); g.fillText(v.toFixed(1),2,y(v)+4); });
+  [mn,(mn+mx)/2,mx].forEach(v=>{ g.beginPath(); g.moveTo(kiri,y(v)); g.lineTo(W-kanan,y(v)); g.stroke(); g.fillText(v.toFixed(1),2,y(v)+4); });
   const fmt=t=>new Date(t).toLocaleTimeString("id-ID",{hour12:false,hour:"2-digit",minute:"2-digit"});
-  g.fillText(fmt(t0),ki,H-5); g.textAlign="right"; g.fillText(fmt(t1),W-ka,H-5); g.textAlign="left";
+  g.fillText(fmt(t0),kiri,H-5); g.textAlign="right"; g.fillText(fmt(t1),W-kanan,H-5); g.textAlign="left";
   g.strokeStyle=biru; g.lineWidth=2; g.beginPath();
-  d.forEach((p,i)=> i? g.lineTo(x(p.t),y(p.v)) : g.moveTo(x(p.t),y(p.v))); g.stroke();
+  d.forEach((p,i)=>i?g.lineTo(x(p.t),y(p.s)):g.moveTo(x(p.t),y(p.s))); g.stroke();
 }
 function unduhCsv(){
   if(!S.data.length){ toast("Belum ada data"); return; }
@@ -467,109 +546,132 @@ function unduhCsv(){
   const isi="waktu,suhu_C,kelembapan_persen,kipas,baterai_V,baterai_persen\n"+S.data.map(p=>{
     const d=new Date(p.t);
     return d.getFullYear()+"-"+dua(d.getMonth()+1)+"-"+dua(d.getDate())+" "+dua(d.getHours())+":"+dua(d.getMinutes())+":"+dua(d.getSeconds())+","+
-      (p.v==null?"":p.v.toFixed(1))+","+kosong(p.h)+","+(p.k==null?"":(p.k?"ON":"OFF"))+","+(p.b==null?"":p.b.toFixed(2))+","+kosong(p.p);
+      p.s.toFixed(1)+","+kosong(p.h)+","+(p.k==null?"":(p.k?"ON":"OFF"))+","+(p.v==null?"":p.v.toFixed(2))+","+kosong(p.p);
   }).join("\n");
   const a=document.createElement("a"), d=new Date();
   a.href=URL.createObjectURL(new Blob([isi],{type:"text/csv"}));
   a.download="data_TWA_"+d.getFullYear()+dua(d.getMonth()+1)+dua(d.getDate())+"_"+dua(d.getHours())+dua(d.getMinutes())+".csv";
-  document.body.appendChild(a); a.click(); a.remove(); toast("File CSV diunduh");
+  document.body.appendChild(a); a.click(); a.remove();
+  toast("File CSV diunduh");
 }
 
-/* ================= 10. PROGRES UJI DAN ALARM ================= */
-function mulaiFase(n,total){ S.dingin=true; S.denyut=n; S.total=total; S.tFase=Date.now(); perbaruiFase(); }
-function selesaiDingin(){
-  S.dingin=false; S.denyut=0; $("batang").style.width="0";
-  $("teksDenyut").textContent="Siaga"; $("teksFase").textContent=""; $("teksFase").className="";
-}
-function perbaruiFase(){
-  if(!S.dingin) return;
-  const lewat=(Date.now()-S.tFase)/1000, p=S.pola, fase=lewat<p.nyala?"dingin":"jeda";
-  const sisa=fase==="dingin"?p.nyala-lewat:p.nyala+p.jeda-lewat;
-  $("teksDenyut").textContent="Denyut "+S.denyut+" dari "+S.total;
-  $("teksFase").className=fase; $("teksFase").textContent=(fase==="dingin"?"Peltier nyala ":"Jeda ")+Math.max(0,Math.ceil(sisa))+" s";
-  const selesai=((S.denyut-1)*(p.nyala+p.jeda)+Math.min(lewat,p.nyala+p.jeda))/(S.total*p.nyala+(S.total-1)*p.jeda);
-  $("batang").style.width=Math.min(100,selesai*100).toFixed(1)+"%";
-}
-setInterval(perbaruiFase,250);
-
-/* ================= 11. SAMBUNG LEWAT WEB BLUETOOTH ================= */
+/* =========================================================
+   8. Menyambung ke gelang lewat Web Bluetooth
+   ========================================================= */
 async function sambungkan(){
-  if(!navigator.bluetooth){ $("tidakDidukung").classList.remove("tersembunyi"); toast("Browser ini tidak mendukung Bluetooth"); return; }
+  if(!navigator.bluetooth){ $("tidakDidukung").classList.remove("tersembunyi"); toast("Browser ini belum bisa memakai Bluetooth"); return; }
+  S.menyambung=true; aturTombol();
   try{
     if(!S.perangkat){
-      S.perangkat=await navigator.bluetooth.requestDevice({filters:[{services:[UUID_LAYANAN]},{namePrefix:AWALAN_NAMA}],optionalServices:[UUID_LAYANAN]});
+      infoKoneksi("Pilih TWA di jendela yang muncul.");
+      S.perangkat=await navigator.bluetooth.requestDevice({
+        filters:[{services:[UUID_LAYANAN]},{namePrefix:AWALAN_NAMA}],
+        optionalServices:[UUID_LAYANAN]
+      });
       S.perangkat.addEventListener("gattserverdisconnected",terputus);
     }
-    $("tblSambung").textContent="Menyambung...";
+    infoKoneksi("Menyambung ke "+(S.perangkat.name||"gelang")+"...");
     const server=await S.perangkat.gatt.connect();
     const layanan=await server.getPrimaryService(UUID_LAYANAN);
     S.rx=await layanan.getCharacteristic(UUID_RX);
     const tx=await layanan.getCharacteristic(UUID_TX);
     tx.addEventListener("characteristicvaluechanged",e=>terimaPotongan(pengurai.decode(e.target.value)));
     await tx.startNotifications();
-    S.tersambung=true; S.sisa=""; $("namaAlat").textContent=S.perangkat.name||"TWA";
-    catat("Tersambung ke "+(S.perangkat.name||"gelang"),"s"); aturTombol(); toast("Gelang tersambung");
-    setTimeout(()=>{ kirimPerintah("JAM "+jamSekarang(true)); kirimPerintah("PANTAU ON"); kirimPerintah("STATUS"); },1500);   // jam gelang otomatis sama dengan HP
+    S.tersambung=true; S.sisa=""; S.antrean=[];
+    $("namaPerangkat").textContent=S.perangkat.name||"TWA";
+    infoKoneksi("");
+    catat("Tersambung ke "+(S.perangkat.name||"gelang"),"s");
+    setelahTersambung();
   }catch(e){
-    if(e.name!=="NotFoundError"){ toast("Gagal menyambung, coba lagi"); catat("Gagal "+e.message,"s"); }
-    S.tersambung=false; aturTombol();
+    if(e.name==="NotFoundError") infoKoneksi("Tidak ada gelang yang dipilih.");
+    else { infoKoneksi("Gagal menyambung. Pastikan gelang menyala, lalu coba lagi."); catat("Gagal "+e.message,"s"); }
+    S.tersambung=false;
   }
+  S.menyambung=false; aturTombol();
+}
+function setelahTersambung(){
+  // Tunggu sapaan gelang, lalu samakan jam, nyalakan pantau suhu, dan minta status
+  setTimeout(()=>{
+    kirimPerintah("JAM "+jamSekarang(true));
+    kirimPerintah("PANTAU ON");
+    kirimPerintah("STATUS");
+  },TUNGGU_SAPAAN_MS);
+  clearInterval(S.hJam);
+  S.hJam=setInterval(()=>kirimPerintah("JAM "+jamSekarang(true)),SINKRON_JAM_MS);
 }
 function terputus(){
-  S.tersambung=false; S.antrean=[]; selesaiDingin(); aturTombol(); sisaAlarm();
-  catat("Terputus","s"); toast("Gelang terputus. Alarm tetap berjalan di gelang.");
+  clearInterval(S.hJam);
+  S.tersambung=false; S.antrean=[]; selesaiDingin();
+  infoKoneksi("Sambungan terputus. Alarm tetap berjalan di gelang.");
+  toast("Sambungan terputus. Alarm tetap berjalan di gelang.");
+  catat("Terputus","s"); aturTombol();
+}
+function putuskan(){
+  if(S.perangkat && S.perangkat.gatt.connected) S.perangkat.gatt.disconnect();
 }
 
-/* ================= 12. TOMBOL ================= */
+/* =========================================================
+   9. Tombol-tombol
+   ========================================================= */
 function bacaPola(){
   const n=Math.round(+$("pNyala").value), j=Math.round(+$("pJeda").value), k=Math.round(+$("pJumlah").value);
-  return (n>=1&&n<=30&&j>=1&&j<=120&&k>=1&&k<=30) ? {nyala:n,jeda:j,jumlah:k} : null;
+  if(!(n>=1&&n<=30&&j>=1&&j<=120&&k>=1&&k<=30)) return null;
+  return {nyala:n,jeda:j,jumlah:k};
 }
-function infoPola(){
-  const p=bacaPola();
-  if(!p){ $("infoPola").textContent="Dingin 1 sampai 30 detik, jeda 1 sampai 120 detik, 1 sampai 30 kali."; return; }
-  const det=p.jumlah*p.nyala+(p.jumlah-1)*p.jeda, m=Math.floor(det/60), s=det%60;
-  $("infoPola").textContent="Satu kali alarm sekitar "+[m?m+" menit":"",s?s+" detik":""].filter(Boolean).join(" ")+".";
-}
-function isiPilihJam(){                                       // isi pilihan jam 00 sampai 23 dan menit 00 sampai 59
-  for(let h=0;h<24;h++) $("inputJam").add(new Option(dua(h),dua(h)));
-  for(let m=0;m<60;m++) $("inputMenit").add(new Option(dua(m),dua(m)));
-}
-function aturPilihJam(j){ const [h,m]=j.split(":"); $("inputJam").value=h; $("inputMenit").value=m; }
-function jamDipilih(){ return $("inputJam").value+":"+$("inputMenit").value; }
-document.querySelectorAll(".rentang button").forEach(b=>b.onclick=()=>{
-  S.rentang=+b.dataset.rentang; document.querySelectorAll(".rentang button").forEach(x=>x.classList.toggle("pilih",x===b)); gambarGrafik();
-});
+document.querySelectorAll("#menu button").forEach(b=>b.onclick=()=>bukaHalaman(b.dataset.hal));
 $("tblSambung").onclick=sambungkan;
-$("tblPutus").onclick=()=>{ if(S.perangkat && S.perangkat.gatt.connected) S.perangkat.gatt.disconnect(); };
+$("tblPutus").onclick=putuskan;
 $("tblUji").onclick=()=>kirimPerintah("UJI");
 $("tblStop").onclick=()=>kirimPerintah("STOP");
-$("tblSimpanAlarm").onclick=()=>kirimPerintah("ALARM "+jamDipilih());
-$("tblMatikanAlarm").onclick=()=>kirimPerintah("ALARM OFF");
-$("saklarAlarm").onchange=e=>{
-  if(e.target.checked){ const v=ambilLokal("alarm")||jamDipilih(); kirimPerintah("ALARM "+v); }
+$("saklar").onchange=()=>{
+  if($("saklar").checked) kirimPerintah("ALARM "+(S.alarm||$("pilJam").value+":"+$("pilMenit").value));
   else kirimPerintah("ALARM OFF");
 };
+$("tblSimpanAlarm").onclick=()=>kirimPerintah("ALARM "+$("pilJam").value+":"+$("pilMenit").value);
+$("tblMatikanAlarm").onclick=()=>kirimPerintah("ALARM OFF");
+$("tblPola").onclick=()=>{
+  const p=bacaPola(); if(!p){ toast("Isi pola di luar batas"); return; }
+  kirimPerintah("POLA "+p.nyala+" "+p.jeda+" "+p.jumlah);
+};
+["pNyala","pJeda","pJumlah"].forEach(id=>$(id).addEventListener("input",infoPola));
 $("kAuto").onclick=()=>kirimPerintah("KIPAS AUTO");
 $("kOn").onclick=()=>kirimPerintah("KIPAS ON");
 $("kOff").onclick=()=>kirimPerintah("KIPAS OFF");
-$("tblPola").onclick=()=>{ const p=bacaPola(); if(p) kirimPerintah("POLA "+p.nyala+" "+p.jeda+" "+p.jumlah); else toast("Nilai di luar batas"); };
-["pNyala","pJeda","pJumlah"].forEach(id=>$(id).addEventListener("input",infoPola));
+document.querySelectorAll("#rentang button").forEach(b=>b.onclick=()=>{
+  S.rentang=b.dataset.r;
+  document.querySelectorAll("#rentang button").forEach(x=>x.classList.toggle("pilih",x===b));
+  perbaruiData();
+});
+$("tblCsv").onclick=unduhCsv;
+$("tblHapus").onclick=()=>{
+  if(!confirm("Hapus semua data yang tersimpan di HP ini?")) return;
+  S.data=[]; S.kotor=true; simpanData(); perbaruiData(); toast("Data dihapus");
+};
 $("tblManual").onclick=()=>{ const v=$("inputManual").value.trim(); if(v){ kirimPerintah(v); $("inputManual").value=""; } };
 $("inputManual").addEventListener("keydown",e=>{ if(e.key==="Enter") $("tblManual").click(); });
-$("tblCsv").onclick=unduhCsv;
-$("tblHapus").onclick=()=>{ if(confirm("Hapus semua data suhu dan baterai di HP ini?")){ S.data=[]; simpanLokal("data",[]); gambarGrafik(); toast("Data dihapus"); } };
-window.addEventListener("resize",gambarGrafik);
+window.addEventListener("resize",()=>{ if(S.hal==="data") perbaruiData(); });
 
-/* ================= 13. SAAT APLIKASI DIBUKA ================= */
+/* =========================================================
+   10. Saat halaman dibuka
+   ========================================================= */
+for(let i=0;i<24;i++) $("pilJam").add(new Option(dua(i),dua(i)));
+for(let i=0;i<60;i++) $("pilMenit").add(new Option(dua(i),dua(i)));
+isiPilihanJam("05:30");
+try{
+  const a=JSON.parse(ambilLokal("alarm")||"null");
+  if(a && /^\d\d:\d\d$/.test(a.j||"")){ S.alarm=a.j; S.alarmAktif=a.a; isiPilihanJam(a.j); }
+}catch(e){}
 if(!navigator.bluetooth) $("tidakDidukung").classList.remove("tersembunyi");
-try{ S.data=JSON.parse(ambilLokal("data")||"[]"); }catch(e){ S.data=[]; }
-isiPilihJam(); aturPilihJam(ambilLokal("alarm")||"05:30");
-document.querySelector('[data-rentang="10"]').classList.add("pilih");
-infoPola(); aturTombol(); sisaAlarm();
-setInterval(()=>{ if(S.tersambung) kirimPerintah("JAM "+jamSekarang(true)); },SINKRON_JAM_MS);
-if("serviceWorker" in navigator && (location.protocol==="https:"||location.hostname==="localhost"))
-  navigator.serviceWorker.register("sw.js").catch(()=>{});   // supaya tetap bisa dibuka tanpa internet
+muatData(); infoPola(); tampilAlarm(); aturTombol();
+setInterval(perbaruiFase,250);
+setInterval(()=>{ tampilJamEsp(); tampilAlarm(); },1000);
+setInterval(simpanData,SIMPAN_DATA_MS);
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) simpanData(); });
+window.addEventListener("pagehide",simpanData);
+// Supaya bisa dibuka tanpa internet setelah kunjungan pertama
+if("serviceWorker" in navigator && (location.protocol==="https:"||location.hostname==="localhost")){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
 </script>
 </body>
 </html>
